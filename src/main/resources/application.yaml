@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: banffypay-pawapay
+
+  profiles:
+    active: dev
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+# PawaPay API Configuration
+pawapay:
+  base-url: https://api.sandbox.pawapay.io
+  api-key: ${PAWAPAY_API_KEY:eyJraWQiOiIxIiwiYWxnIjoiRVMyNTYifQ.eyJ0dCI6IkFBVCIsInN1YiI6IjE5MTM2IiwibWF2IjoiMSIsImV4cCI6MjA5MjMzMDA3OCwiaWF0IjoxNzc2NzEwODc4LCJwbSI6IkRBRixQQUYiLCJqdGkiOiI1YWFlNjk2Yy1kMTdjLTRiMTktYmY2OC0yZDkwYzg1YTdkOWEifQ._8Sl2qJrr1ZF8rVFKwtcdjwwjbS4kVyZ4uprmoidZ3DRmS02SPzRYtvQd0o758i-1gSd9u1JecTLsktwTjKgJw}
+  deposit:
+    endpoint: /v2/deposits
+    idempotency-header: true
+  payout:
+    endpoint: /v2/payouts
+    idempotency-header: true
+  timeout: 30
+  max-retries: 3
+
+# Logging
+logging:
+  level:
+    com.banffpay.pawapay: DEBUG
+    org.springframework.web: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    com.banffpay.pawapay: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    com.banffpay.pawapay: INFO
+    org.springframework.web: WARN
