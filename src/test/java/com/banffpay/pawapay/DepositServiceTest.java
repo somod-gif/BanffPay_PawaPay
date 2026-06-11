@@ -3,6 +3,8 @@ package com.banffpay.pawapay;
 import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.dto.DepositRequest;
 import com.banffpay.pawapay.dto.TransactionResponse;
+import com.banffpay.pawapay.model.SupportedCountry;
+import com.banffpay.pawapay.service.CountryValidationService;
 import com.banffpay.pawapay.service.DepositService;
 import com.banffpay.pawapay.store.TransactionStore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +23,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link DepositService}.
+ *
+ * <p>Tests cover:
+ * <ul>
+ *   <li>Successful deposits for Zambia (ISO2 and ISO3) and Uganda</li>
+ *   <li>Validation failures: invalid country, invalid currency, wrong currency, invalid provider</li>
+ *   <li>Status check with live sync from PawaPay</li>
+ * </ul>
+ *
+ * <p>Validation is delegated to {@link CountryValidationService}, which is mocked
+ * to isolate the deposit service logic.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class DepositServiceTest {
 
@@ -29,6 +44,9 @@ class DepositServiceTest {
 
     @Mock
     private TransactionStore store;
+
+    @Mock
+    private CountryValidationService countryValidationService;
 
     @InjectMocks
     private DepositService depositService;
@@ -51,31 +69,50 @@ class DepositServiceTest {
 
     @Test
     void initiateDeposit_zambia_success() throws Exception {
+        // Mock validation to succeed
+        CountryValidationService.ValidationResult result =
+                new CountryValidationService.ValidationResult(
+                        SupportedCountry.ZAMBIA, "MTN_MOMO_ZMB", "ZMW");
+        when(countryValidationService.validateAll(eq("ZMB"), eq("ZMW"), eq("MTN_MOMO_ZMB"),
+                eq(new BigDecimal("20")), eq("260763456789")))
+                .thenReturn(result);
+
         JsonNode response = objectMapper.readTree(
                 "{\"depositId\":\"f4401bd2-1568-4140-bf2d-eb77d2b2b639\",\"status\":\"ACCEPTED\",\"created\":\"2026-06-10T10:00:00Z\"}");
         when(pawapayClient.initiateDeposit(anyString(), anyString(), anyString(),
                 anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(response);
 
-        TransactionResponse result = depositService.initiateDeposit(validRequest);
+        TransactionResponse transactionResult = depositService.initiateDeposit(validRequest);
 
-        assertNotNull(result);
-        assertEquals("DEPOSIT", result.getType());
-        assertEquals("ACCEPTED", result.getStatus());
-        assertEquals("ZMW", result.getCurrency());
-        assertEquals("INV-260763456789", result.getMerchantTransactionId());
-        assertEquals("Eniola", result.getCustomerName());
-        assertEquals(BigDecimal.valueOf(20), result.getAmount());
-        assertNotNull(result.getTransactionId());
-        assertNotNull(result.getPawapayId());
-        assertNotNull(result.getCreatedAt());
+        assertNotNull(transactionResult);
+        assertEquals("DEPOSIT", transactionResult.getType());
+        assertEquals("ACCEPTED", transactionResult.getStatus());
+        assertEquals("ZMW", transactionResult.getCurrency());
+        assertEquals("INV-260763456789", transactionResult.getMerchantTransactionId());
+        assertEquals("Eniola", transactionResult.getCustomerName());
+        assertEquals(BigDecimal.valueOf(20), transactionResult.getAmount());
+        assertNotNull(transactionResult.getTransactionId());
+        assertNotNull(transactionResult.getPawapayId());
+        assertNotNull(transactionResult.getCreatedAt());
+
+        // Verify the deposit was saved to the store
+        verify(store, times(1)).save(any());
+        // Verify PawaPay API was called with backend-controlled currency
+        verify(pawapayClient).initiateDeposit(anyString(), anyString(), anyString(),
+                anyString(), eq("ZMW"), anyString(), anyString());
     }
 
     @Test
     void initiateDeposit_invalidCountry() {
         validRequest.setCountry("US");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid country
+        when(countryValidationService.validateAll(eq("US"), anyString(), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException("Unsupported country code: 'US'"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> depositService.initiateDeposit(validRequest));
         assertTrue(ex.getMessage().contains("Unsupported country"));
     }
@@ -84,16 +121,28 @@ class DepositServiceTest {
     void initiateDeposit_invalidCurrency() {
         validRequest.setCurrency("XYZ");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid currency
+        when(countryValidationService.validateAll(eq("ZMB"), eq("XYZ"), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid currency 'XYZ' for country ZM (Zambia). Expected: ZMW"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> depositService.initiateDeposit(validRequest));
-        assertTrue(ex.getMessage().contains("Invalid currency") || ex.getMessage().contains("Unsupported currency"));
+        assertTrue(ex.getMessage().contains("Invalid currency"));
     }
 
     @Test
     void initiateDeposit_wrongCurrencyForCountry() {
         validRequest.setCurrency("UGX");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for wrong currency
+        when(countryValidationService.validateAll(eq("ZMB"), eq("UGX"), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid currency 'UGX' for country ZM (Zambia). Expected: ZMW"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> depositService.initiateDeposit(validRequest));
         assertTrue(ex.getMessage().contains("Invalid currency"));
     }
@@ -102,7 +151,13 @@ class DepositServiceTest {
     void initiateDeposit_invalidProvider() {
         validRequest.setProvider("WRONG_PROVIDER");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid provider
+        when(countryValidationService.validateAll(eq("ZMB"), anyString(), eq("WRONG_PROVIDER"),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid provider 'WRONG_PROVIDER' for country ZM (Zambia). Valid providers: MTN_MOMO_ZMB, AIRTEL_ZMB"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> depositService.initiateDeposit(validRequest));
         assertTrue(ex.getMessage().contains("Invalid provider"));
     }
@@ -114,18 +169,30 @@ class DepositServiceTest {
         validRequest.setProvider("MTN_MOMO_UGA");
         validRequest.setPhoneNumber("256700123456");
 
+        // Mock validation to succeed
+        CountryValidationService.ValidationResult result =
+                new CountryValidationService.ValidationResult(
+                        SupportedCountry.UGANDA, "MTN_MOMO_UGA", "UGX");
+        when(countryValidationService.validateAll(eq("UG"), eq("UGX"), eq("MTN_MOMO_UGA"),
+                eq(new BigDecimal("20")), eq("256700123456")))
+                .thenReturn(result);
+
         JsonNode response = objectMapper.readTree(
                 "{\"depositId\":\"a2201bd2-1568-4140-bf2d-eb77d2b2b789\",\"status\":\"ACCEPTED\",\"created\":\"2026-06-10T10:00:00Z\"}");
         when(pawapayClient.initiateDeposit(anyString(), anyString(), anyString(),
                 anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(response);
 
-        TransactionResponse result = depositService.initiateDeposit(validRequest);
+        TransactionResponse transactionResult = depositService.initiateDeposit(validRequest);
 
-        assertNotNull(result);
-        assertEquals("DEPOSIT", result.getType());
-        assertEquals("ACCEPTED", result.getStatus());
-        assertEquals("UGX", result.getCurrency());
+        assertNotNull(transactionResult);
+        assertEquals("DEPOSIT", transactionResult.getType());
+        assertEquals("ACCEPTED", transactionResult.getStatus());
+        assertEquals("UGX", transactionResult.getCurrency());
+
+        // Verify PawaPay was called with UGX
+        verify(pawapayClient).initiateDeposit(anyString(), anyString(), anyString(),
+                anyString(), eq("UGX"), anyString(), anyString());
     }
 
     @Test
@@ -135,17 +202,25 @@ class DepositServiceTest {
         validRequest.setProvider("MTN_MOMO_ZMB");
         validRequest.setPhoneNumber("260763456789");
 
+        // Mock validation to succeed
+        CountryValidationService.ValidationResult result =
+                new CountryValidationService.ValidationResult(
+                        SupportedCountry.ZAMBIA, "MTN_MOMO_ZMB", "ZMW");
+        when(countryValidationService.validateAll(eq("ZM"), eq("ZMW"), eq("MTN_MOMO_ZMB"),
+                eq(new BigDecimal("20")), eq("260763456789")))
+                .thenReturn(result);
+
         JsonNode response = objectMapper.readTree(
                 "{\"depositId\":\"f4401bd2-1568-4140-bf2d-eb77d2b2b639\",\"status\":\"ACCEPTED\",\"created\":\"2026-06-10T10:00:00Z\"}");
         when(pawapayClient.initiateDeposit(anyString(), anyString(), anyString(),
                 anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(response);
 
-        TransactionResponse result = depositService.initiateDeposit(validRequest);
+        TransactionResponse transactionResult = depositService.initiateDeposit(validRequest);
 
-        assertNotNull(result);
-        assertEquals("ACCEPTED", result.getStatus());
-        assertEquals("ZMW", result.getCurrency());
+        assertNotNull(transactionResult);
+        assertEquals("ACCEPTED", transactionResult.getStatus());
+        assertEquals("ZMW", transactionResult.getCurrency());
     }
 
     @Test
@@ -169,10 +244,20 @@ class DepositServiceTest {
         when(pawapayClient.checkDepositStatus("f4401bd2-1568-4140-bf2d-eb77d2b2b639"))
                 .thenReturn(response);
 
-        TransactionResponse result = depositService.getDepositStatus(transactionId);
+        TransactionResponse transactionResult = depositService.getDepositStatus(transactionId);
 
-        assertNotNull(result);
-        assertEquals(transactionId, result.getTransactionId());
-        assertEquals("COMPLETED", result.getStatus());
+        assertNotNull(transactionResult);
+        assertEquals(transactionId, transactionResult.getTransactionId());
+        assertEquals("COMPLETED", transactionResult.getStatus());
+    }
+
+    @Test
+    void getDepositStatus_transactionNotFound() {
+        String transactionId = "non-existent";
+        when(store.findById(transactionId)).thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> depositService.getDepositStatus(transactionId));
+        assertTrue(ex.getMessage().contains("Transaction not found"));
     }
 }

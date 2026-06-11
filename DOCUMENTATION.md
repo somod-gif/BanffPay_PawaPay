@@ -2,13 +2,14 @@
 
 ## 📋 Project Overview
 
-**BanffPay PawaPay Integration** is a Spring Boot REST API middleware that connects BanffPay's internal systems to **PawaPay API v2** for mobile money payments. It enables deposit collection and payout disbursement across Zambia and Uganda.
+**BanffPay PawaPay Integration** is a Spring Boot REST API middleware that connects BanffPay's internal systems to **PawaPay API v2** for mobile money payments across multiple African countries.
 
 - **Java 21** + **Spring Boot 3.3**
 - **API v2 endpoints**: `https://api.sandbox.pawapay.io/v2`
 - **In-memory store** (ConcurrentHashMap) — no database required
 - **Swagger UI**: `/swagger-ui.html`
 - **OpenAPI spec**: `/v3/api-docs`
+- **Supported countries**: Uganda, Zambia, Rwanda, Tanzania, Kenya, Nigeria, South Africa + Cameroon, Benin
 
 ---
 
@@ -29,14 +30,23 @@
 └─────────┬──────────────────┬─────────────────┘
           │                  │
           ▼                  ▼
-┌──────────────────────────────────────────────┐
-│         SERVICE LAYER                         │
-│  DepositService  │  PayoutService             │
-│  (validation +   │  (validation +             │
-│   transformation │   transformation           │
-│   to PawaPay     │   to PawaPay format)       │
-│   format)        │                            │
-└─────────┬──────────────────┬─────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                      SERVICE LAYER                                   │
+│  ┌────────────────────────────────────────────────────────┐         │
+│  │              CountryValidationService                  │         │
+│  │  (Central validation — used by BOTH services)         │         │
+│  │  • validateAndResolveCountry() — ISO2/ISO3 lookup     │         │
+│  │  • validateCurrencyForCountry() — backend-controlled  │         │
+│  │  • validateProviderForCountry() — multi-provider      │         │
+│  │  • validateAmount() — positive check                  │         │
+│  │  • validatePhoneNumber() — format check               │         │
+│  │  • validateAll() — single-call convenience            │         │
+│  └────────────────────────────────────────────────────────┘         │
+│                                                                      │
+│  DepositService  │  PayoutService                                    │
+│  (routes to      │  (routes to CountryValidationService)            │
+│   CountryValidation + transforms to PawaPay format)                  │
+└─────────┬──────────────────┬─────────────────────────────────────────┘
           │                  │
           ▼                  ▼
 ┌──────────────────────────────────────────────┐
@@ -68,12 +78,19 @@
 
 ## 🌍 Supported Countries
 
-| Country | Country Code | Currency | Provider | Phone Example |
-|---------|-------------|----------|----------|---------------|
-| Zambia | `ZM` or `ZMB` | `ZMW` | `MTN_MOMO_ZMB` | `260763456789` |
-| Uganda | `UG` | `UGX` | `MTN_MOMO_UGA` | `256700123456` |
+| Country | ISO2 | ISO3 | Currency | Supported Providers |
+|---------|------|------|----------|-------------------|
+| Uganda | `UG` | `UGA` | `UGX` | `MTN_MOMO_UGA`, `AIRTEL_UGA` |
+| Zambia | `ZM` | `ZMB` | `ZMW` | `MTN_MOMO_ZMB`, `AIRTEL_ZMB` |
+| Rwanda | `RW` | `RWA` | `RWF` | `MTN_MOMO_RWA`, `AIRTEL_RWA` |
+| Tanzania | `TZ` | `TZA` | `TZS` | `AIRTEL_TZA`, `VODACOM_TZA`, `TIGO_TZA`, `HALOTEL_TZA` |
+| Kenya | `KE` | `KEN` | `KES` | `MPESA_KE`, `AIRTEL_KE`, `TKASH_KE` |
+| Nigeria | `NG` | `NGA` | `NGN` | `MTN_MOMO_NG`, `AIRTEL_NG`, `GLO_NG`, `9MOBILE_NG` |
+| South Africa | `ZA` | `ZAF` | `ZAR` | `VODACOM_ZA`, `MTN_ZA`, `TELKOM_ZA` |
+| Cameroon | `CM` | `CMR` | `XAF` | `MTN_MOMO_CMR`, `ORANGE_CMR` |
+| Benin | `BJ` | `BEN` | `XOF` | `MTN_MOMO_BEN`, `MOOV_BEN` |
 
-**Note:** Both `ZM` and `ZMB` are accepted as Zambia country codes.
+**Note:** Both ISO2 (e.g. `ZM`) and ISO3 (e.g. `ZMB`) codes are accepted for all countries.
 
 ---
 
@@ -95,7 +112,7 @@
 
 ### 1. Client sends POST `/api/deposits`
 
-**Request Body:**
+**Request Body (Zambia):**
 ```json
 {
   "merchantTransactionId": "INV-260763456789",
@@ -108,7 +125,52 @@
 }
 ```
 
-### 2. Backend transforms to PawaPay v2 format
+**Request Body (Nigeria):**
+```json
+{
+  "merchantTransactionId": "INV-2345678901",
+  "customerName": "Chidi",
+  "phoneNumber": "2348012345678",
+  "country": "NG",
+  "currency": "NGN",
+  "amount": 5000,
+  "provider": "MTN_MOMO_NG"
+}
+```
+
+**Request Body (Kenya):**
+```json
+{
+  "merchantTransactionId": "INV-254712345678",
+  "customerName": "Wanjiku",
+  "phoneNumber": "254712345678",
+  "country": "KE",
+  "currency": "KES",
+  "amount": 1000,
+  "provider": "MPESA_KE"
+}
+```
+
+### 2. Backend validation flow
+
+```
+Request received
+    │
+    ▼
+CountryValidationService.validateAll()
+    │
+    ├── validateAndResolveCountry()   → SupportedCountry lookup (ISO2/ISO3)
+    ├── validateCurrencyForCountry()  → Backend-controlled check
+    ├── validateProviderForCountry()  → Multi-provider validation
+    ├── validateAmount()              → Positive check
+    └── validatePhoneNumber()         → 7-15 digit format
+    │
+    ▼
+Backend uses its own currency from SupportedCountry (client currency 
+only validated for consistency — backend always controls the final value)
+```
+
+### 3. Backend transforms to PawaPay v2 format
 ```json
 {
   "depositId": "uuid-generated",
@@ -123,15 +185,6 @@
   "currency": "ZMW",
   "clientReferenceId": "INV-260763456789",
   "customerMessage": "Deposit INV-260763456789"
-}
-```
-
-### 3. PawaPay response
-```json
-{
-  "depositId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
-  "status": "ACCEPTED",
-  "created": "2026-06-10T10:00:00Z"
 }
 ```
 
@@ -156,16 +209,29 @@
 
 ### 1. Client sends POST `/api/payouts`
 
-**Request Body:**
+**Request Body (Tanzania):**
 ```json
 {
-  "customerName": "Jane Doe",
-  "merchantTransactionId": "INV-673476476",
-  "phoneNumber": "260763456789",
-  "country": "ZM",
-  "amount": "15",
-  "currency": "ZMW",
-  "provider": "MTN_MOMO_ZMB"
+  "customerName": "Juma",
+  "merchantTransactionId": "INV-255712345678",
+  "phoneNumber": "255712345678",
+  "country": "TZ",
+  "amount": "15000",
+  "currency": "TZS",
+  "provider": "VODACOM_TZA"
+}
+```
+
+**Request Body (South Africa):**
+```json
+{
+  "customerName": "Thabo",
+  "merchantTransactionId": "INV-278212345678",
+  "phoneNumber": "278212345678",
+  "country": "ZA",
+  "amount": "500",
+  "currency": "ZAR",
+  "provider": "VODACOM_ZA"
 }
 ```
 
@@ -176,14 +242,14 @@
   "recipient": {
     "type": "MMO",
     "accountDetails": {
-      "phoneNumber": "260763456789",
-      "provider": "MTN_MOMO_ZMB"
+      "phoneNumber": "255712345678",
+      "provider": "VODACOM_TZA"
     }
   },
-  "amount": "15",
-  "currency": "ZMW",
-  "clientReferenceId": "INV-673476476",
-  "customerMessage": "Payout INV-673476476"
+  "amount": "15000",
+  "currency": "TZS",
+  "clientReferenceId": "INV-255712345678",
+  "customerMessage": "Payout INV-255712345678"
 }
 ```
 
@@ -191,13 +257,13 @@
 ```json
 {
   "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "INV-673476476",
-  "customerName": "Jane Doe",
+  "merchantTransactionId": "INV-255712345678",
+  "customerName": "Juma",
   "pawapayId": "c6601bd2-1568-4140-bf2d-eb77d2b2b222",
   "type": "PAYOUT",
   "status": "ACCEPTED",
-  "amount": 15,
-  "currency": "ZMW",
+  "amount": 15000,
+  "currency": "TZS",
   "createdAt": "2026-06-10T10:19:43.697Z"
 }
 ```
@@ -206,7 +272,7 @@
 
 ## 🔄 Status Check
 
-### GET `/api/deposits/{transactionId}`
+### GET `/api/deposits/{transactionId}` or GET `/api/payouts/{transactionId}`
 
 Response:
 ```json
@@ -261,7 +327,7 @@ The backend also calls PawaPay's status endpoint to sync the latest status befor
 |------|-------------|
 | **200** | ✅ Success |
 | **202** | ⏳ Accepted / Processing |
-| **400** | ❌ Bad Request — Validation error |
+| **400** | ❌ Bad Request — Validation error (invalid country, currency, provider) |
 | **401** | 🔒 Not Authenticated |
 | **403** | 🚫 Not Allowed |
 | **404** | 🔍 Not Found |
@@ -333,33 +399,48 @@ curl -X POST http://localhost:8080/api/deposits \
   }'
 ```
 
-**Deposit — Uganda (UGX):**
+**Deposit — Kenya (KES / MPESA):**
 ```bash
 curl -X POST http://localhost:8080/api/deposits \
   -H "Content-Type: application/json" \
   -d '{
-    "merchantTransactionId": "INV-256700123456",
-    "customerName": "Peter",
-    "phoneNumber": "256700123456",
-    "country": "UG",
-    "currency": "UGX",
-    "amount": 50000,
-    "provider": "MTN_MOMO_UGA"
+    "merchantTransactionId": "INV-254712345678",
+    "customerName": "Wanjiku",
+    "phoneNumber": "254712345678",
+    "country": "KE",
+    "currency": "KES",
+    "amount": 1000,
+    "provider": "MPESA_KE"
   }'
 ```
 
-**Payout — Zambia (ZMW):**
+**Deposit — Nigeria (NGN):**
+```bash
+curl -X POST http://localhost:8080/api/deposits \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchantTransactionId": "INV-2345678901",
+    "customerName": "Chidi",
+    "phoneNumber": "2348012345678",
+    "country": "NG",
+    "currency": "NGN",
+    "amount": 5000,
+    "provider": "MTN_MOMO_NG"
+  }'
+```
+
+**Payout — Tanzania (TZS / Vodacom):**
 ```bash
 curl -X POST http://localhost:8080/api/payouts \
   -H "Content-Type: application/json" \
   -d '{
-    "customerName": "Jane Doe",
-    "merchantTransactionId": "INV-673476476",
-    "phoneNumber": "260763456789",
-    "country": "ZM",
-    "amount": "15",
-    "currency": "ZMW",
-    "provider": "MTN_MOMO_ZMB"
+    "customerName": "Juma",
+    "merchantTransactionId": "INV-255712345678",
+    "phoneNumber": "255712345678",
+    "country": "TZ",
+    "amount": "15000",
+    "currency": "TZS",
+    "provider": "VODACOM_TZA"
   }'
 ```
 
@@ -374,8 +455,6 @@ mvn spring-boot:run
 # Terminal 2: Start ngrok
 ngrok http 8080
 ```
-
-
 
 **Webhook URL to configure in PawaPay:**
 ```
@@ -397,7 +476,7 @@ curl -X POST https://tasty-porcupine-cabdriver.ngrok-free.dev/api/webhooks/pawap
 
 ## 🧪 Postman Testing Flow
 
-### Test 1: Initiate Deposit
+### Test 1: Initiate Deposit (any supported country)
 ```
 POST /api/deposits
 → Expect 200, status: "ACCEPTED"
@@ -426,7 +505,7 @@ GET /api/deposits/{transactionId}
 → Expect 200, status: "COMPLETED"
 ```
 
-### Test 5: Initiate Payout
+### Test 5: Initiate Payout (any supported country)
 ```
 POST /api/payouts
 → Expect 200, status: "ACCEPTED"
@@ -470,6 +549,7 @@ src/main/java/com/banffpay/pawapay/
 │   ├── PayoutController.java            # Payout REST endpoints
 │   └── WebhookController.java           # Webhook REST endpoint
 ├── service/
+│   ├── CountryValidationService.java    # ⬅ NEW — Central validation hub
 │   ├── DepositService.java              # Deposit business logic
 │   ├── PayoutService.java               # Payout business logic
 │   └── WebhookService.java              # Webhook processing logic
@@ -484,6 +564,7 @@ src/main/java/com/banffpay/pawapay/
 │   ├── DepositResponse.java             # (Unused, kept for reference)
 │   └── PayoutResponse.java              # (Unused, kept for reference)
 ├── model/
+│   ├── SupportedCountry.java            # ⬅ REFACTORED — Multi-country, multi-provider
 │   └── Transaction.java                 # Transaction domain model
 ├── store/
 │   └── TransactionStore.java            # In-memory ConcurrentHashMap store
@@ -493,59 +574,69 @@ src/main/java/com/banffpay/pawapay/
 
 ---
 
-## 🔑 Key Design Decisions
+## 🔑 Key Design Decisions (v2.0 Refactor)
 
 | Decision | Rationale |
 |----------|-----------|
-| **String amount** in requests | Accept both `20` (number) and `"15"` (string) from Postman |
-| **String amount** in PawaPay API | PawaPay v2 requires amount as string |
-| **BigDecimal amount** in response | Standard Java decimal type for monetary values |
-| **ZM/ZMB both accepted** | User may send either 2-letter or 3-letter country code |
-| **In-memory store** | No external database dependency; simple ConcurrentHashMap |
-| **UUID generation** | Backend generates depositId/payoutId internally |
-| **200 for POST** | Matches user requirement for success responses |
-| **Idempotency-Key header** | Prevents duplicate PawaPay transactions |
-| **No depositId/payoutId in request** | Backend auto-generates these; client only sends merchantTransactionId |
+| **CountryValidationService** | Centralizes all validation logic — used by BOTH DepositService and PayoutService. Eliminates duplicate validation. |
+| **Backend-controlled currency** | Currency is always derived from SupportedCountry enum. Client's currency input is validated for consistency only. |
+| **Multi-provider per country** | `SupportedCountry` now holds a `List<String>` of providers instead of a single string. Adding a provider is a one-line change. |
+| **Enum-based country resolution** | `SupportedCountry.findByCountryCode()` is the ONLY entry point for country lookup. No hardcoded country checks anywhere. |
+| **Extensible by design** | Adding a new country = adding one enum constant. No service/controller changes needed. |
+| **validateAll() convenience** | Single method performs all 6 validation steps and returns a `ValidationResult` record. |
+| **No business logic in DTOs** | DTOs only have validation annotations. All business rules are in CountryValidationService. |
+| **Descriptive error messages** | Errors include the country name, expected currency, and list of valid providers for the country. |
+
+### Why CountryValidationService instead of inline validation?
+
+Before (PayoutService had inline validation):
+```java
+// ❌ Duplicate logic — also exists in DepositService
+if (!supported.getCurrency().equals(currency)) {
+    throw new RuntimeException("...");
+}
+if (!supported.getProvider().equals(provider)) {
+    throw new RuntimeException("...");
+}
+```
+
+After (both services use shared validation):
+```java
+// ✅ Single source of truth
+CountryValidationService.ValidationResult result = countryValidationService.validateAll(
+    countryCode, clientCurrency, provider, amount, phoneNumber
+);
+```
 
 ---
 
-## ✅ Files Modified (Complete List)
+## ✅ Files Modified (v2.0 Multi-Country Refactor)
 
+### New Files
+| File | Description |
+|------|-------------|
+| `service/CountryValidationService.java` | Central validation hub — country resolution, currency validation (backend-controlled), multi-provider validation, amount/phone checks. Includes `validateAll()` convenience method. |
+
+### Modified Files
 | File | Change |
 |------|--------|
-| `DepositRequest.java` | Flattened: `merchantTransactionId`, `customerName`, `phoneNumber`, `country`, `currency`, `amount` (String), `provider` |
-| `PayoutRequest.java` | Flattened: `merchantTransactionId`, `customerName`, `phoneNumber`, `country`, `currency`, `amount` (String), `provider` |
-| `TransactionResponse.java` | Added `@Schema` annotations, `customerName` field |
-| `WebhookRequest.java` | Changed `paymentId` → `pawapayId` |
-| `Transaction.java` | Added `customerName`, `provider` fields |
-| `TransactionStore.java` | Added `findByPawapayId()` with bidirectional index |
-| `DepositService.java` | Full rewrite: reads flat fields, validates country+currency+provider, calls PawapayClient, returns TransactionResponse |
-| `PayoutService.java` | Full rewrite: same pattern as deposit |
-| `WebhookService.java` | Updated to use `pawapayId`, expanded valid statuses |
-| `DepositController.java` | Returns `TransactionResponse`, 200 for success, comprehensive Swagger @ApiResponses |
-| `PayoutController.java` | Returns `TransactionResponse`, 200 for success, comprehensive Swagger @ApiResponses |
-| `PawapayClient.java` | Updated to use v2 endpoint paths |
-| `PawapayProperties.java` | Default endpoints changed to `/v2/deposits` and `/v2/payouts` |
-| `application.yaml` | base-url → `https://api.sandbox.pawapay.io`, endpoints → `/v2/deposits`, `/v2/payouts` |
-| `OpenApiConfig.java` | Added ngrok server URL |
-| `CorsConfig.java` | Added ngrok origin |
-| `GlobalExceptionHandler.java` | Improved error response format |
-| All 3 test files | Complete rewrite to match new DTOs and service logic |
+| `model/SupportedCountry.java` | **Major refactor.** Added 5 new countries (Rwanda, Tanzania, Kenya, Nigeria, South Africa). Changed from single `String provider` to `List<String> providers` for multi-provider support. Added `isValidProvider()`, `resolveToIso2()`, `resolveToIso3()`. Better error messages listing all countries + providers. |
+| `service/DepositService.java` | Refactored to use `CountryValidationService.validateAll()` instead of inline validation. Cleaner extraction of `ValidationResult` (country, validatedProvider, backendCurrency). |
+| `service/PayoutService.java` | **Major refactor.** Removed all inline validation logic. Now uses `CountryValidationService` exactly like DepositService. Stores normalized ISO2 country, backend-controlled currency, validated provider. |
+| `dto/DepositRequest.java` | Added missing `currency` field (it was being read by DepositService but didn't exist in the DTO). |
 
----
-
-## 📈 Test Results
-
-```
-Tests run: 19, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS ✅
-```
-
-| Test Class | Tests | Coverage |
-|------------|-------|----------|
-| DepositServiceTest | 8 | Zambia success, Uganda success, ZM shortcode, invalid country, invalid currency, wrong currency, invalid provider, status check |
-| PayoutServiceTest | 7 | Zambia success, Uganda success, invalid country, invalid currency, wrong currency, invalid provider, status check |
-| WebhookServiceTest | 4 | Completed, Failed, invalid status, transaction not found |
-| **Total** | **19** | **All passing** |
+### Unchanged Files
+| File | Reason |
+|------|--------|
+| `DepositController.java` | API contract is stable. No changes needed. |
+| `PayoutController.java` | API contract is stable. No changes needed. |
+| `WebhookService.java` | Unrelated to country support. |
+| `Transaction.java` | Model is generic enough. |
+| `TransactionStore.java` | Store is country-agnostic. |
+| `PawapayClient.java` | Client is country-agnostic. |
+| `PawapayProperties.java` | Configuration is country-agnostic. |
+| `application.yaml` | No config changes needed for country support. |
+| All config files | Unrelated to country support. |
 
 ---
 
@@ -553,10 +644,12 @@ Tests run: 19, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS ✅
 
 | Problem | Solution |
 |---------|----------|
-| `"Unsupported country"` | Use `ZM`, `ZMB`, or `UG` |
-| `"Invalid currency"` | Use `ZMW` for Zambia, `UGX` for Uganda |
-| `"Invalid provider"` | Use `MTN_MOMO_ZMB` for ZMW, `MTN_MOMO_UGA` for UGX |
-| `"Transaction not found"` | Use the `transactionId` from the create response, not `depositId`/`payoutId` |
-| Port 8080 in use | Kill existing process or change port in `application.yaml` |
-| Webhook failing | Ensure ngrok is running and URL is correct |
-| PawaPay returning errors | Check API key and sandbox URL |
+| `"Unsupported country code: 'XX'"` | Use a supported ISO2 or ISO3 code. See the Supported Countries table above. |
+| `"Invalid currency"` | Currency must match the country's backend-controlled currency. E.g., `ZMW` for Zambia, `KES` for Kenya. |
+| `"Invalid provider"` | Provider must be in the country's allowed list. E.g., for Zambia: `MTN_MOMO_ZMB` or `AIRTEL_ZMB`. |
+| `"Transaction not found"` | Use the `transactionId` from the create response, not `depositId`/`payoutId`. |
+| `"Phone number must be 7-15 digits"` | Phone numbers must be numeric (MSISDN format, no `+` or spaces). |
+| Port 8080 in use | Kill existing process or change port in `application.yaml`. |
+| Webhook failing | Ensure ngrok is running and URL is correct. |
+| PawaPay returning errors | Check API key and sandbox URL. |
+| **Adding a new country** | Only edit `SupportedCountry.java` — add a new enum constant. No other files need changes. |

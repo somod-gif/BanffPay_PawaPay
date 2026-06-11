@@ -3,6 +3,8 @@ package com.banffpay.pawapay;
 import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.dto.PayoutRequest;
 import com.banffpay.pawapay.dto.TransactionResponse;
+import com.banffpay.pawapay.model.SupportedCountry;
+import com.banffpay.pawapay.service.CountryValidationService;
 import com.banffpay.pawapay.service.PayoutService;
 import com.banffpay.pawapay.store.TransactionStore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +23,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link PayoutService}.
+ *
+ * <p>Tests cover:
+ * <ul>
+ *   <li>Successful payouts for Zambia and Uganda</li>
+ *   <li>Validation failures: invalid country, invalid currency, wrong currency, invalid provider</li>
+ *   <li>Status check with live sync from PawaPay</li>
+ * </ul>
+ *
+ * <p>Validation is delegated to {@link CountryValidationService}, which is mocked
+ * to isolate the payout service logic.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class PayoutServiceTest {
 
@@ -29,6 +44,9 @@ class PayoutServiceTest {
 
     @Mock
     private TransactionStore store;
+
+    @Mock
+    private CountryValidationService countryValidationService;
 
     @InjectMocks
     private PayoutService payoutService;
@@ -51,6 +69,14 @@ class PayoutServiceTest {
 
     @Test
     void initiatePayout_zambia_success() throws Exception {
+        // Mock validation to succeed
+        CountryValidationService.ValidationResult validationResult =
+                new CountryValidationService.ValidationResult(
+                        SupportedCountry.ZAMBIA, "MTN_MOMO_ZMB", "ZMW");
+        when(countryValidationService.validateAll(eq("ZM"), eq("ZMW"), eq("MTN_MOMO_ZMB"),
+                eq(new BigDecimal("15")), eq("260763456789")))
+                .thenReturn(validationResult);
+
         JsonNode response = objectMapper.readTree(
                 "{\"payoutId\":\"c6601bd2-1568-4140-bf2d-eb77d2b2b222\",\"status\":\"ACCEPTED\",\"created\":\"2026-06-10T10:00:00Z\"}");
         when(pawapayClient.initiatePayout(anyString(), anyString(), anyString(),
@@ -69,13 +95,24 @@ class PayoutServiceTest {
         assertNotNull(result.getTransactionId());
         assertNotNull(result.getPawapayId());
         assertNotNull(result.getCreatedAt());
+
+        // Verify the payout was saved to the store
+        verify(store, times(1)).save(any());
+        // Verify PawaPay API was called with backend-controlled currency
+        verify(pawapayClient).initiatePayout(anyString(), anyString(), anyString(),
+                anyString(), eq("ZMW"), anyString(), anyString());
     }
 
     @Test
     void initiatePayout_invalidCountry() {
         validRequest.setCountry("US");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid country
+        when(countryValidationService.validateAll(eq("US"), anyString(), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException("Unsupported country code: 'US'"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> payoutService.initiatePayout(validRequest));
         assertTrue(ex.getMessage().contains("Unsupported country"));
     }
@@ -84,16 +121,28 @@ class PayoutServiceTest {
     void initiatePayout_invalidCurrency() {
         validRequest.setCurrency("XYZ");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid currency
+        when(countryValidationService.validateAll(eq("ZM"), eq("XYZ"), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid currency 'XYZ' for country ZM (Zambia). Expected: ZMW"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> payoutService.initiatePayout(validRequest));
-        assertTrue(ex.getMessage().contains("Invalid currency") || ex.getMessage().contains("Unsupported currency"));
+        assertTrue(ex.getMessage().contains("Invalid currency"));
     }
 
     @Test
     void initiatePayout_wrongCurrencyForCountry() {
         validRequest.setCurrency("UGX");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for wrong currency
+        when(countryValidationService.validateAll(eq("ZM"), eq("UGX"), anyString(),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid currency 'UGX' for country ZM (Zambia). Expected: ZMW"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> payoutService.initiatePayout(validRequest));
         assertTrue(ex.getMessage().contains("Invalid currency"));
     }
@@ -102,7 +151,13 @@ class PayoutServiceTest {
     void initiatePayout_invalidProvider() {
         validRequest.setProvider("WRONG_PROVIDER");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        // Mock validation to throw exception for invalid provider
+        when(countryValidationService.validateAll(eq("ZM"), anyString(), eq("WRONG_PROVIDER"),
+                any(), anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Invalid provider 'WRONG_PROVIDER' for country ZM (Zambia). Valid providers: MTN_MOMO_ZMB, AIRTEL_ZMB"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> payoutService.initiatePayout(validRequest));
         assertTrue(ex.getMessage().contains("Invalid provider"));
     }
@@ -113,6 +168,14 @@ class PayoutServiceTest {
         validRequest.setCurrency("UGX");
         validRequest.setProvider("MTN_MOMO_UGA");
         validRequest.setPhoneNumber("256700123456");
+
+        // Mock validation to succeed
+        CountryValidationService.ValidationResult ugValidationResult =
+                new CountryValidationService.ValidationResult(
+                        SupportedCountry.UGANDA, "MTN_MOMO_UGA", "UGX");
+        when(countryValidationService.validateAll(eq("UG"), eq("UGX"), eq("MTN_MOMO_UGA"),
+                eq(new BigDecimal("15")), eq("256700123456")))
+                .thenReturn(ugValidationResult);
 
         JsonNode response = objectMapper.readTree(
                 "{\"payoutId\":\"b5501bd2-1568-4140-bf2d-eb77d2b2b111\",\"status\":\"ACCEPTED\",\"created\":\"2026-06-10T10:00:00Z\"}");
@@ -126,6 +189,10 @@ class PayoutServiceTest {
         assertEquals("PAYOUT", result.getType());
         assertEquals("ACCEPTED", result.getStatus());
         assertEquals("UGX", result.getCurrency());
+
+        // Verify PawaPay was called with UGX
+        verify(pawapayClient).initiatePayout(anyString(), anyString(), anyString(),
+                anyString(), eq("UGX"), anyString(), anyString());
     }
 
     @Test
@@ -154,5 +221,15 @@ class PayoutServiceTest {
         assertNotNull(result);
         assertEquals(transactionId, result.getTransactionId());
         assertEquals("COMPLETED", result.getStatus());
+    }
+
+    @Test
+    void getPayoutStatus_transactionNotFound() {
+        String transactionId = "non-existent";
+        when(store.findById(transactionId)).thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> payoutService.getPayoutStatus(transactionId));
+        assertTrue(ex.getMessage().contains("Transaction not found"));
     }
 }
