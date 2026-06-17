@@ -49,6 +49,8 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
+        <!-- Scheduler (included in spring-boot-starter) -->
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

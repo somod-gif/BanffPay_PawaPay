@@ -4,6 +4,9 @@ import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.dto.PayoutRequest;
 import com.banffpay.pawapay.dto.TransactionResponse;
 import com.banffpay.pawapay.model.SupportedCountry;
+import com.banffpay.pawapay.model.Transaction;
+import com.banffpay.pawapay.model.TransactionStatus;
+import com.banffpay.pawapay.model.TransactionType;
 import com.banffpay.pawapay.service.CountryValidationService;
 import com.banffpay.pawapay.service.PayoutService;
 import com.banffpay.pawapay.store.TransactionStore;
@@ -23,19 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link PayoutService}.
- *
- * <p>Tests cover:
- * <ul>
- *   <li>Successful payouts for Zambia and Uganda</li>
- *   <li>Validation failures: invalid country, invalid currency, wrong currency, invalid provider</li>
- *   <li>Status check with live sync from PawaPay</li>
- * </ul>
- *
- * <p>Validation is delegated to {@link CountryValidationService}, which is mocked
- * to isolate the payout service logic.</p>
- */
 @ExtendWith(MockitoExtension.class)
 class PayoutServiceTest {
 
@@ -69,7 +59,6 @@ class PayoutServiceTest {
 
     @Test
     void initiatePayout_zambia_success() throws Exception {
-        // Mock validation to succeed
         CountryValidationService.ValidationResult validationResult =
                 new CountryValidationService.ValidationResult(
                         SupportedCountry.ZAMBIA, "MTN_MOMO_ZMB", "ZMW");
@@ -86,8 +75,8 @@ class PayoutServiceTest {
         TransactionResponse result = payoutService.initiatePayout(validRequest);
 
         assertNotNull(result);
-        assertEquals("PAYOUT", result.getType());
-        assertEquals("ACCEPTED", result.getStatus());
+        assertEquals(TransactionType.PAYOUT, result.getType());
+        assertEquals(TransactionStatus.ACCEPTED, result.getStatus());
         assertEquals("ZMW", result.getCurrency());
         assertEquals("INV-673476476", result.getMerchantTransactionId());
         assertEquals("Jane Doe", result.getCustomerName());
@@ -96,9 +85,7 @@ class PayoutServiceTest {
         assertNotNull(result.getPawapayId());
         assertNotNull(result.getCreatedAt());
 
-        // Verify the payout was saved to the store
         verify(store, times(1)).save(any());
-        // Verify PawaPay API was called with backend-controlled currency
         verify(pawapayClient).initiatePayout(anyString(), anyString(), anyString(),
                 anyString(), eq("ZMW"), anyString(), anyString());
     }
@@ -107,7 +94,6 @@ class PayoutServiceTest {
     void initiatePayout_invalidCountry() {
         validRequest.setCountry("US");
 
-        // Mock validation to throw exception for invalid country
         when(countryValidationService.validateAll(eq("US"), anyString(), anyString(),
                 any(), anyString()))
                 .thenThrow(new IllegalArgumentException("Unsupported country code: 'US'"));
@@ -121,7 +107,6 @@ class PayoutServiceTest {
     void initiatePayout_invalidCurrency() {
         validRequest.setCurrency("XYZ");
 
-        // Mock validation to throw exception for invalid currency
         when(countryValidationService.validateAll(eq("ZM"), eq("XYZ"), anyString(),
                 any(), anyString()))
                 .thenThrow(new IllegalArgumentException(
@@ -136,7 +121,6 @@ class PayoutServiceTest {
     void initiatePayout_wrongCurrencyForCountry() {
         validRequest.setCurrency("UGX");
 
-        // Mock validation to throw exception for wrong currency
         when(countryValidationService.validateAll(eq("ZM"), eq("UGX"), anyString(),
                 any(), anyString()))
                 .thenThrow(new IllegalArgumentException(
@@ -151,7 +135,6 @@ class PayoutServiceTest {
     void initiatePayout_invalidProvider() {
         validRequest.setProvider("WRONG_PROVIDER");
 
-        // Mock validation to throw exception for invalid provider
         when(countryValidationService.validateAll(eq("ZM"), anyString(), eq("WRONG_PROVIDER"),
                 any(), anyString()))
                 .thenThrow(new IllegalArgumentException(
@@ -169,7 +152,6 @@ class PayoutServiceTest {
         validRequest.setProvider("MTN_MOMO_UGA");
         validRequest.setPhoneNumber("256700123456");
 
-        // Mock validation to succeed
         CountryValidationService.ValidationResult ugValidationResult =
                 new CountryValidationService.ValidationResult(
                         SupportedCountry.UGANDA, "MTN_MOMO_UGA", "UGX");
@@ -186,11 +168,10 @@ class PayoutServiceTest {
         TransactionResponse result = payoutService.initiatePayout(validRequest);
 
         assertNotNull(result);
-        assertEquals("PAYOUT", result.getType());
-        assertEquals("ACCEPTED", result.getStatus());
+        assertEquals(TransactionType.PAYOUT, result.getType());
+        assertEquals(TransactionStatus.ACCEPTED, result.getStatus());
         assertEquals("UGX", result.getCurrency());
 
-        // Verify PawaPay was called with UGX
         verify(pawapayClient).initiatePayout(anyString(), anyString(), anyString(),
                 anyString(), eq("UGX"), anyString(), anyString());
     }
@@ -198,13 +179,13 @@ class PayoutServiceTest {
     @Test
     void getPayoutStatus_success() throws Exception {
         String transactionId = "test-tx-id";
-        com.banffpay.pawapay.model.Transaction tx = com.banffpay.pawapay.model.Transaction.builder()
+        Transaction tx = Transaction.builder()
                 .transactionId(transactionId)
                 .merchantTransactionId("INV-673476476")
                 .customerName("Jane Doe")
                 .pawapayId("c6601bd2-1568-4140-bf2d-eb77d2b2b222")
-                .type("PAYOUT")
-                .status("PROCESSING")
+                .type(TransactionType.PAYOUT)
+                .status(TransactionStatus.PROCESSING)
                 .amount(BigDecimal.valueOf(15))
                 .currency("ZMW")
                 .provider("MTN_MOMO_ZMB")
@@ -220,7 +201,7 @@ class PayoutServiceTest {
 
         assertNotNull(result);
         assertEquals(transactionId, result.getTransactionId());
-        assertEquals("COMPLETED", result.getStatus());
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.banffpay.pawapay.store;
 import com.banffpay.pawapay.model.Transaction;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,5 +32,20 @@ public class TransactionStore {
             return Optional.empty();
         }
         return Optional.ofNullable(storeByTransactionId.get(transactionId));
+    }
+
+    /**
+     * Returns all transactions in the store.
+     */
+    public List<Transaction> findAll() {
+        return new ArrayList<>(storeByTransactionId.values());
+    }
+
+    /**
+     * Clears all transactions (for testing purposes only).
+     */
+    public void clearAll() {
+        storeByTransactionId.clear();
+        pawapayIdToTransactionId.clear();
     }
 }

@@ -5,6 +5,8 @@ import com.banffpay.pawapay.dto.DepositRequest;
 import com.banffpay.pawapay.dto.TransactionResponse;
 import com.banffpay.pawapay.model.SupportedCountry;
 import com.banffpay.pawapay.model.Transaction;
+import com.banffpay.pawapay.model.TransactionStatus;
+import com.banffpay.pawapay.model.TransactionType;
 import com.banffpay.pawapay.store.TransactionStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -113,14 +115,16 @@ public class DepositService {
                 ? pawapayResponse.get("depositId").asText()
                 : depositId;
 
+        TransactionStatus status = TransactionStatus.fromValue(pawapayStatus);
+
         // Save transaction with normalized data
         Transaction transaction = Transaction.builder()
                 .transactionId(transactionId)
                 .merchantTransactionId(merchantTransactionId)
                 .customerName(customerName)
                 .pawapayId(pawapayId)
-                .type("DEPOSIT")
-                .status(pawapayStatus)
+                .type(TransactionType.DEPOSIT)
+                .status(status)
                 .amount(amount)
                 .currency(backendCurrency)               // Backend-controlled
                 .phoneNumber(phoneNumber)
@@ -132,7 +136,7 @@ public class DepositService {
         store.save(transaction);
 
         log.info("Deposit initiated successfully: transactionId={} pawapayId={} status={} country={} currency={} provider={}",
-                transactionId, pawapayId, pawapayStatus, supported.getIso2(), backendCurrency, validatedProvider);
+                transactionId, pawapayId, status, supported.getIso2(), backendCurrency, validatedProvider);
 
         return mapToResponse(transaction);
     }
@@ -151,7 +155,7 @@ public class DepositService {
         Transaction transaction = store.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
-        if (!"DEPOSIT".equals(transaction.getType())) {
+        if (transaction.getType() != TransactionType.DEPOSIT) {
             log.warn("Transaction {} is not a deposit transaction (type: {})", transactionId, transaction.getType());
         }
 
@@ -159,7 +163,8 @@ public class DepositService {
         try {
             JsonNode response = pawapayClient.checkDepositStatus(transaction.getPawapayId());
             if (response.has("status")) {
-                String newStatus = response.get("status").asText();
+                String newStatusStr = response.get("status").asText();
+                TransactionStatus newStatus = TransactionStatus.fromValue(newStatusStr);
                 if (!newStatus.equals(transaction.getStatus())) {
                     log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
                             transactionId, transaction.getStatus(), newStatus);
@@ -191,6 +196,9 @@ public class DepositService {
                 .status(transaction.getStatus())
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
+                .phoneNumber(transaction.getPhoneNumber())
+                .country(transaction.getCountry())
+                .provider(transaction.getProvider())
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }

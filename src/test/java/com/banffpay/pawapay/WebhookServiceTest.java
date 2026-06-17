@@ -2,8 +2,13 @@ package com.banffpay.pawapay;
 
 import com.banffpay.pawapay.dto.WebhookRequest;
 import com.banffpay.pawapay.model.Transaction;
+import com.banffpay.pawapay.model.TransactionStatus;
+import com.banffpay.pawapay.model.TransactionType;
+import com.banffpay.pawapay.service.WebhookResult;
 import com.banffpay.pawapay.service.WebhookService;
 import com.banffpay.pawapay.store.TransactionStore;
+import com.banffpay.pawapay.store.WebhookEventStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,18 +21,28 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WebhookServiceTest {
 
     @Mock
-    private TransactionStore store;
+    private TransactionStore transactionStore;
+
+    @Mock
+    private WebhookEventStore webhookEventStore;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private WebhookService webhookService;
 
     private Transaction sampleTransaction;
+
+    private static final String CORRELATION_ID = "test-correlation-id";
+    private static final String PAWAPAY_ID = "f4401bd2-1568-4140-bf2d-eb77d2b2b639";
 
     @BeforeEach
     void setUp() {
@@ -35,9 +50,9 @@ class WebhookServiceTest {
                 .transactionId("tx-1")
                 .merchantTransactionId("INV-123456")
                 .customerName("Eniola")
-                .pawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639")
-                .type("DEPOSIT")
-                .status("PROCESSING")
+                .pawapayId(PAWAPAY_ID)
+                .type(TransactionType.DEPOSIT)
+                .status(TransactionStatus.PROCESSING)
                 .amount(BigDecimal.valueOf(20))
                 .currency("ZMW")
                 .phoneNumber("260763456789")
@@ -48,61 +63,114 @@ class WebhookServiceTest {
     }
 
     @Test
-    void processWebhook_completed() {
-        when(store.findByPawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639"))
+    void processWebhook_depositCompleted_success() {
+        when(transactionStore.findByPawapayId(PAWAPAY_ID))
                 .thenReturn(Optional.of(sampleTransaction));
+        when(webhookEventStore.findByCorrelationId(CORRELATION_ID))
+                .thenReturn(Optional.empty());
 
         WebhookRequest request = new WebhookRequest();
-        request.setPawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639");
+        request.setPawapayId(PAWAPAY_ID);
         request.setType("DEPOSIT");
         request.setStatus("COMPLETED");
 
-        String result = webhookService.processWebhook(request);
+        WebhookResult result = webhookService.processWebhook(request, CORRELATION_ID);
 
-        assertEquals("Webhook processed successfully", result);
-        assertEquals("COMPLETED", sampleTransaction.getStatus());
-        verify(store).save(sampleTransaction);
+        assertTrue(result.isSuccess());
+        assertFalse(result.isDuplicate());
+        assertEquals(TransactionStatus.COMPLETED, sampleTransaction.getStatus());
+        verify(transactionStore).save(sampleTransaction);
     }
 
     @Test
-    void processWebhook_failed() {
-        when(store.findByPawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639"))
+    void processWebhook_depositFailed_success() {
+        when(transactionStore.findByPawapayId(PAWAPAY_ID))
                 .thenReturn(Optional.of(sampleTransaction));
+        when(webhookEventStore.findByCorrelationId(CORRELATION_ID))
+                .thenReturn(Optional.empty());
 
         WebhookRequest request = new WebhookRequest();
-        request.setPawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639");
+        request.setPawapayId(PAWAPAY_ID);
         request.setType("DEPOSIT");
         request.setStatus("FAILED");
 
-        String result = webhookService.processWebhook(request);
+        WebhookResult result = webhookService.processWebhook(request, CORRELATION_ID);
 
-        assertEquals("Webhook processed successfully", result);
-        assertEquals("FAILED", sampleTransaction.getStatus());
+        assertTrue(result.isSuccess());
+        assertEquals(TransactionStatus.FAILED, sampleTransaction.getStatus());
+        verify(transactionStore).save(sampleTransaction);
     }
 
     @Test
-    void processWebhook_invalidStatus() {
-        WebhookRequest request = new WebhookRequest();
-        request.setPawapayId("f4401bd2-1568-4140-bf2d-eb77d2b2b639");
-        request.setType("DEPOSIT");
-        request.setStatus("INVALID");
+    void processWebhook_payoutCompleted_success() {
+        Transaction payoutTx = Transaction.builder()
+                .transactionId("tx-2")
+                .pawapayId(PAWAPAY_ID)
+                .type(TransactionType.PAYOUT)
+                .status(TransactionStatus.PROCESSING)
+                .amount(BigDecimal.valueOf(50))
+                .currency("UGX")
+                .phoneNumber("256700123456")
+                .country("UG")
+                .provider("MTN_MOMO_UGA")
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> webhookService.processWebhook(request));
-        assertTrue(ex.getMessage().contains("Invalid status"));
+        when(transactionStore.findByPawapayId(PAWAPAY_ID))
+                .thenReturn(Optional.of(payoutTx));
+        when(webhookEventStore.findByCorrelationId(CORRELATION_ID))
+                .thenReturn(Optional.empty());
+
+        WebhookRequest request = new WebhookRequest();
+        request.setPawapayId(PAWAPAY_ID);
+        request.setType("PAYOUT");
+        request.setStatus("COMPLETED");
+
+        WebhookResult result = webhookService.processWebhook(request, CORRELATION_ID);
+
+        assertTrue(result.isSuccess());
+        assertEquals(TransactionStatus.COMPLETED, payoutTx.getStatus());
+        verify(transactionStore).save(payoutTx);
     }
 
     @Test
-    void processWebhook_transactionNotFound() {
-        when(store.findByPawapayId("unknown-id")).thenReturn(Optional.empty());
+    void processWebhook_duplicate_idempotent() {
+        when(webhookEventStore.findByCorrelationId(CORRELATION_ID))
+                .thenReturn(Optional.of(com.banffpay.pawapay.model.WebhookEvent.builder()
+                        .id("existing-event")
+                        .correlationId(CORRELATION_ID)
+                        .build()));
 
         WebhookRequest request = new WebhookRequest();
-        request.setPawapayId("unknown-id");
+        request.setPawapayId(PAWAPAY_ID);
         request.setType("DEPOSIT");
         request.setStatus("COMPLETED");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> webhookService.processWebhook(request));
-        assertTrue(ex.getMessage().contains("Transaction not found"));
+        WebhookResult result = webhookService.processWebhook(request, CORRELATION_ID);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.isDuplicate());
+        // Transaction should NOT have been updated
+        assertEquals(TransactionStatus.PROCESSING, sampleTransaction.getStatus());
+    }
+
+    @Test
+    void processWebhook_unmatchedTransaction() {
+        String unknownId = "unknown-id";
+        when(webhookEventStore.findByCorrelationId(CORRELATION_ID))
+                .thenReturn(Optional.empty());
+        when(transactionStore.findByPawapayId(unknownId))
+                .thenReturn(Optional.empty());
+
+        WebhookRequest request = new WebhookRequest();
+        request.setPawapayId(unknownId);
+        request.setType("DEPOSIT");
+        request.setStatus("COMPLETED");
+
+        WebhookResult result = webhookService.processWebhook(request, CORRELATION_ID);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.isUnmatched());
+        assertTrue(result.getMessage().contains("Transaction not found"));
     }
 }

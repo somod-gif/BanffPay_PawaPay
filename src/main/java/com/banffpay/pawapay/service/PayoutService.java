@@ -5,6 +5,8 @@ import com.banffpay.pawapay.dto.PayoutRequest;
 import com.banffpay.pawapay.dto.TransactionResponse;
 import com.banffpay.pawapay.model.SupportedCountry;
 import com.banffpay.pawapay.model.Transaction;
+import com.banffpay.pawapay.model.TransactionStatus;
+import com.banffpay.pawapay.model.TransactionType;
 import com.banffpay.pawapay.store.TransactionStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -112,14 +114,16 @@ public class PayoutService {
                 ? pawapayResponse.get("payoutId").asText()
                 : payoutId;
 
+        TransactionStatus status = TransactionStatus.fromValue(pawapayStatus);
+
         // Save transaction with normalized data
         Transaction transaction = Transaction.builder()
                 .transactionId(transactionId)
                 .merchantTransactionId(merchantTransactionId)
                 .customerName(customerName)
                 .pawapayId(pawapayId)
-                .type("PAYOUT")
-                .status(pawapayStatus)
+                .type(TransactionType.PAYOUT)
+                .status(status)
                 .amount(amount)
                 .currency(backendCurrency)                // Backend-controlled
                 .phoneNumber(phoneNumber)
@@ -131,7 +135,7 @@ public class PayoutService {
         store.save(transaction);
 
         log.info("Payout initiated successfully: transactionId={} pawapayId={} status={} country={} currency={} provider={}",
-                transactionId, pawapayId, pawapayStatus, supported.getIso2(), backendCurrency, validatedProvider);
+                transactionId, pawapayId, status, supported.getIso2(), backendCurrency, validatedProvider);
 
         return mapToResponse(transaction);
     }
@@ -150,7 +154,7 @@ public class PayoutService {
         Transaction transaction = store.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
-        if (!"PAYOUT".equals(transaction.getType())) {
+        if (transaction.getType() != TransactionType.PAYOUT) {
             log.warn("Transaction {} is not a payout transaction (type: {})", transactionId, transaction.getType());
         }
 
@@ -158,7 +162,8 @@ public class PayoutService {
         try {
             JsonNode response = pawapayClient.checkPayoutStatus(transaction.getPawapayId());
             if (response.has("status")) {
-                String newStatus = response.get("status").asText();
+                String newStatusStr = response.get("status").asText();
+                TransactionStatus newStatus = TransactionStatus.fromValue(newStatusStr);
                 if (!newStatus.equals(transaction.getStatus())) {
                     log.info("Payout status updated: transactionId={} oldStatus={} newStatus={}",
                             transactionId, transaction.getStatus(), newStatus);
@@ -190,6 +195,9 @@ public class PayoutService {
                 .status(transaction.getStatus())
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
+                .phoneNumber(transaction.getPhoneNumber())
+                .country(transaction.getCountry())
+                .provider(transaction.getProvider())
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }
