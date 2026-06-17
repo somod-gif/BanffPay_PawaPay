@@ -25,22 +25,25 @@ public class DepositController {
     private final DepositService depositService;
 
     @PostMapping
-    @Operation(summary = "Initiate a deposit", description = "Creates a new mobile money deposit request and submits it to PawaPay for processing")
+    @Operation(summary = "Initiate a deposit", description = "Creates a new mobile money deposit request and submits it to PawaPay for processing. merchantTransactionId must start with 'DEP-' (e.g., DEP-001).")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Success – Deposit initiated successfully",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                 schema = @Schema(implementation = TransactionResponse.class),
-                examples = @ExampleObject(value = """
+                examples = @ExampleObject(name = "ZambiaDeposit", value = """
                     {
                       "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-                      "merchantTransactionId": "INV-260763456789",
+                      "merchantTransactionId": "DEP-001",
                       "customerName": "Eniola",
                       "pawapayId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
                       "type": "DEPOSIT",
                       "status": "ACCEPTED",
                       "amount": 20,
                       "currency": "ZMW",
-                      "createdAt": "2026-06-10T10:19:43.697Z"
+                      "phoneNumber": "260763456789",
+                      "country": "ZM",
+                      "provider": "MTN_MOMO_ZMB",
+                      "createdAt": "2026-06-10T10:19:43.697"
                     }"""))),
         @ApiResponse(responseCode = "202", description = "Accepted – Deposit is being processed"),
         @ApiResponse(responseCode = "400", description = "Bad Request – Validation error or invalid request",
@@ -63,22 +66,25 @@ public class DepositController {
     }
 
     @GetMapping("/{transactionId}")
-    @Operation(summary = "Get deposit status", description = "Retrieves the current status of a deposit transaction")
+    @Operation(summary = "Get deposit status", description = "Retrieves the current status of a deposit transaction by transactionId")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Success – Deposit status retrieved",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                 schema = @Schema(implementation = TransactionResponse.class),
-                examples = @ExampleObject(value = """
+                examples = @ExampleObject(name = "DepositStatus", value = """
                     {
                       "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-                      "merchantTransactionId": "INV-260763456789",
+                      "merchantTransactionId": "DEP-001",
                       "customerName": "Eniola",
                       "pawapayId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
                       "type": "DEPOSIT",
-                      "status": "ACCEPTED",
+                      "status": "COMPLETED",
                       "amount": 20,
                       "currency": "ZMW",
-                      "createdAt": "2026-06-10T10:19:43.697Z"
+                      "phoneNumber": "260763456789",
+                      "country": "ZM",
+                      "provider": "MTN_MOMO_ZMB",
+                      "createdAt": "2026-06-10T10:19:43.697"
                     }"""))),
         @ApiResponse(responseCode = "400", description = "Bad Request – Invalid transaction ID"),
         @ApiResponse(responseCode = "401", description = "Not Authenticated"),

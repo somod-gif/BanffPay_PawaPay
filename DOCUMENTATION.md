@@ -112,10 +112,12 @@
 
 ### 1. Client sends POST `/api/deposits`
 
+**Naming Convention:** `merchantTransactionId` must start with `DEP-` (e.g., `DEP-001`, `DEP-002`)
+
 **Request Body (Zambia):**
 ```json
 {
-  "merchantTransactionId": "INV-260763456789",
+  "merchantTransactionId": "DEP-001",
   "customerName": "Eniola",
   "phoneNumber": "260763456789",
   "country": "ZMB",
@@ -128,7 +130,7 @@
 **Request Body (Nigeria):**
 ```json
 {
-  "merchantTransactionId": "INV-2345678901",
+  "merchantTransactionId": "DEP-002",
   "customerName": "Chidi",
   "phoneNumber": "2348012345678",
   "country": "NG",
@@ -141,7 +143,7 @@
 **Request Body (Kenya):**
 ```json
 {
-  "merchantTransactionId": "INV-254712345678",
+  "merchantTransactionId": "DEP-003",
   "customerName": "Wanjiku",
   "phoneNumber": "254712345678",
   "country": "KE",
@@ -183,8 +185,8 @@ only validated for consistency — backend always controls the final value)
   },
   "amount": "20",
   "currency": "ZMW",
-  "clientReferenceId": "INV-260763456789",
-  "customerMessage": "Deposit INV-260763456789"
+  "clientReferenceId": "DEP-001",
+  "customerMessage": "Deposit DEP-001"
 }
 ```
 
@@ -192,14 +194,17 @@ only validated for consistency — backend always controls the final value)
 ```json
 {
   "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "INV-260763456789",
+  "merchantTransactionId": "DEP-001",
   "customerName": "Eniola",
   "pawapayId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
   "type": "DEPOSIT",
   "status": "ACCEPTED",
   "amount": 20,
   "currency": "ZMW",
-  "createdAt": "2026-06-10T10:19:43.697Z"
+  "phoneNumber": "260763456789",
+  "country": "ZM",
+  "provider": "MTN_MOMO_ZMB",
+  "createdAt": "2026-06-10T10:19:43.697"
 }
 ```
 
@@ -209,11 +214,13 @@ only validated for consistency — backend always controls the final value)
 
 ### 1. Client sends POST `/api/payouts`
 
+**Naming Convention:** `merchantTransactionId` must start with `PAY-` (e.g., `PAY-001`, `PAY-002`)
+
 **Request Body (Tanzania):**
 ```json
 {
   "customerName": "Juma",
-  "merchantTransactionId": "INV-255712345678",
+  "merchantTransactionId": "PAY-001",
   "phoneNumber": "255712345678",
   "country": "TZ",
   "amount": "15000",
@@ -226,7 +233,7 @@ only validated for consistency — backend always controls the final value)
 ```json
 {
   "customerName": "Thabo",
-  "merchantTransactionId": "INV-278212345678",
+  "merchantTransactionId": "PAY-002",
   "phoneNumber": "278212345678",
   "country": "ZA",
   "amount": "500",
@@ -248,8 +255,8 @@ only validated for consistency — backend always controls the final value)
   },
   "amount": "15000",
   "currency": "TZS",
-  "clientReferenceId": "INV-255712345678",
-  "customerMessage": "Payout INV-255712345678"
+  "clientReferenceId": "PAY-001",
+  "customerMessage": "Payout PAY-001"
 }
 ```
 
@@ -257,14 +264,17 @@ only validated for consistency — backend always controls the final value)
 ```json
 {
   "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "INV-255712345678",
+  "merchantTransactionId": "PAY-001",
   "customerName": "Juma",
   "pawapayId": "c6601bd2-1568-4140-bf2d-eb77d2b2b222",
   "type": "PAYOUT",
   "status": "ACCEPTED",
   "amount": 15000,
   "currency": "TZS",
-  "createdAt": "2026-06-10T10:19:43.697Z"
+  "phoneNumber": "255712345678",
+  "country": "TZ",
+  "provider": "VODACOM_TZA",
+  "createdAt": "2026-06-10T10:19:43.697"
 }
 ```
 
@@ -278,14 +288,17 @@ Response:
 ```json
 {
   "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "INV-260763456789",
+  "merchantTransactionId": "DEP-001",
   "customerName": "Eniola",
   "pawapayId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
   "type": "DEPOSIT",
-  "status": "ACCEPTED",
+  "status": "COMPLETED",
   "amount": 20,
   "currency": "ZMW",
-  "createdAt": "2026-06-10T10:19:43.697Z"
+  "phoneNumber": "260763456789",
+  "country": "ZM",
+  "provider": "MTN_MOMO_ZMB",
+  "createdAt": "2026-06-10T10:19:43.697"
 }
 ```
 
@@ -309,7 +322,11 @@ The backend also calls PawaPay's status endpoint to sync the latest status befor
 **Response:**
 ```json
 {
-  "message": "Webhook processed successfully"
+  "success": true,
+  "message": "Deposit completed successfully",
+  "correlationId": "550e8400-e29b-41d4-a716-446655440000",
+  "duplicate": false,
+  "timestamp": "2026-06-16T22:00:00"
 }
 ```
 
@@ -389,7 +406,7 @@ mvn spring-boot:run
 curl -X POST http://localhost:8080/api/deposits \
   -H "Content-Type: application/json" \
   -d '{
-    "merchantTransactionId": "INV-260763456789",
+    "merchantTransactionId": "DEP-001",
     "customerName": "Eniola",
     "phoneNumber": "260763456789",
     "country": "ZMB",
@@ -404,7 +421,7 @@ curl -X POST http://localhost:8080/api/deposits \
 curl -X POST http://localhost:8080/api/deposits \
   -H "Content-Type: application/json" \
   -d '{
-    "merchantTransactionId": "INV-254712345678",
+    "merchantTransactionId": "DEP-002",
     "customerName": "Wanjiku",
     "phoneNumber": "254712345678",
     "country": "KE",
@@ -419,7 +436,7 @@ curl -X POST http://localhost:8080/api/deposits \
 curl -X POST http://localhost:8080/api/deposits \
   -H "Content-Type: application/json" \
   -d '{
-    "merchantTransactionId": "INV-2345678901",
+    "merchantTransactionId": "DEP-003",
     "customerName": "Chidi",
     "phoneNumber": "2348012345678",
     "country": "NG",
@@ -435,7 +452,7 @@ curl -X POST http://localhost:8080/api/payouts \
   -H "Content-Type: application/json" \
   -d '{
     "customerName": "Juma",
-    "merchantTransactionId": "INV-255712345678",
+    "merchantTransactionId": "PAY-001",
     "phoneNumber": "255712345678",
     "country": "TZ",
     "amount": "15000",

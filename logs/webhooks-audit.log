@@ -1,2 +1,68 @@
 2026-06-17 10:47:42.643 [a920bfdd-7ce8-4242-ab74-76dd4f7fa24d] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T10:47:42.642429700
 2026-06-17 10:47:42.662 [a920bfdd-7ce8-4242-ab74-76dd4f7fa24d] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:09:58.403 [bfb24757-3b70-4f30-b91e-b8ede8f42659] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:09:58.403010
+2026-06-17 11:09:58.407 [bfb24757-3b70-4f30-b91e-b8ede8f42659] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:13:54.787 [test-corr-001] [6985a52c-0718-4796-82b4-3f8c9bdbca9c] [WEBHOOK_EVENT] pawapayId=6985a52c-0718-4796-82b4-3f8c9bdbca9c type=DEPOSIT oldStatus=ACCEPTED newStatus=COMPLETED correlationId=test-corr-001
+2026-06-17 11:13:54.792 [test-corr-001] [6985a52c-0718-4796-82b4-3f8c9bdbca9c] [DEPOSIT_COMPLETED] pawapayId=6985a52c-0718-4796-82b4-3f8c9bdbca9c transactionId=acf975df-295b-48fd-a98d-b9b985b93f91 amount=20 ZMW correlationId=test-corr-001
+2026-06-17 11:13:54.792 [test-corr-001] [6985a52c-0718-4796-82b4-3f8c9bdbca9c] [WEBHOOK_PROCESSED] pawapayId=6985a52c-0718-4796-82b4-3f8c9bdbca9c type=DEPOSIT status=COMPLETED correlationId=test-corr-001 eventId=d6afb2a0-8703-4bf5-bb76-988b95e77037
+2026-06-17 11:14:32.215 [test-corr-001] [6985a52c-0718-4796-82b4-3f8c9bdbca9c] Duplicate webhook detected: correlationId=test-corr-001 pawapayId=6985a52c-0718-4796-82b4-3f8c9bdbca9c type=DEPOSIT status=COMPLETED
+2026-06-17 11:14:58.358 [bac44cc1-5f42-4545-84af-4983c4595fce] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:14:58.358852400
+2026-06-17 11:14:58.358 [bac44cc1-5f42-4545-84af-4983c4595fce] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:15:24.336 [3254ceed-bfaf-48ca-921c-af99b6f9d0d1] [00000000-0000-0000-0000-000000000000] Transaction not found for pawapayId=00000000-0000-0000-0000-000000000000 type=DEPOSIT status=COMPLETED. Manual reconciliation needed.
+2026-06-17 11:17:54.206 [c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9] [f60bf205-8d39-444c-9836-a1458eb0d92c] [WEBHOOK_EVENT] pawapayId=f60bf205-8d39-444c-9836-a1458eb0d92c type=PAYOUT oldStatus=ACCEPTED newStatus=COMPLETED correlationId=c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9
+2026-06-17 11:17:54.206 [c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9] [f60bf205-8d39-444c-9836-a1458eb0d92c] [PAYOUT_COMPLETED] pawapayId=f60bf205-8d39-444c-9836-a1458eb0d92c transactionId=92ad6942-c1c1-48fb-b5a3-ee388db8443f amount=50 ZMW correlationId=c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9
+2026-06-17 11:17:54.206 [c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9] [f60bf205-8d39-444c-9836-a1458eb0d92c] [WEBHOOK_PROCESSED] pawapayId=f60bf205-8d39-444c-9836-a1458eb0d92c type=PAYOUT status=COMPLETED correlationId=c07f77ff-5b0f-4b82-b25a-8c6214b2a5f9 eventId=c0a26208-e88e-4c98-a3ce-b4242c164b81
+2026-06-17 11:19:58.333 [fd17d3ad-3a14-4971-9b72-fd7dd7a5e4dc] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:19:58.333063700
+2026-06-17 11:19:58.334 [fd17d3ad-3a14-4971-9b72-fd7dd7a5e4dc] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:24:58.331 [e04f8a07-5acc-4ca5-9f52-55db7111eab5] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:24:58.331593
+2026-06-17 11:24:58.332 [e04f8a07-5acc-4ca5-9f52-55db7111eab5] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:29:58.333 [98e96ae0-0d8b-4865-845e-f96d6d546ed6] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:29:58.333237200
+2026-06-17 11:29:58.335 [98e96ae0-0d8b-4865-845e-f96d6d546ed6] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:34:58.336 [4c4bb8f2-0f55-4da9-a8e7-eb914102fbdb] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:34:58.336890100
+2026-06-17 11:34:58.340 [4c4bb8f2-0f55-4da9-a8e7-eb914102fbdb] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:39:58.332 [0826186b-fdfe-430d-8b7b-32e60406189e] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:39:58.332487400
+2026-06-17 11:39:58.334 [0826186b-fdfe-430d-8b7b-32e60406189e] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:44:58.343 [4d530572-02d9-4a61-9010-b5b7765160ba] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:44:58.343837900
+2026-06-17 11:44:58.345 [4d530572-02d9-4a61-9010-b5b7765160ba] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:49:58.338 [72e46830-1ba9-421b-a30a-3545975c9273] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:49:58.338009300
+2026-06-17 11:49:58.340 [72e46830-1ba9-421b-a30a-3545975c9273] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:54:58.342 [e97801d6-9bcd-47c3-a9c2-f24d59bf7376] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:54:58.342660800
+2026-06-17 11:54:58.342 [e97801d6-9bcd-47c3-a9c2-f24d59bf7376] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 11:59:58.342 [b432a33c-9ad8-4f6d-869a-9f51c141f895] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T11:59:58.342210200
+2026-06-17 11:59:58.344 [b432a33c-9ad8-4f6d-869a-9f51c141f895] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:06:30.397 [76781501-7369-4973-b066-9d276c52d6a0] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:06:30.397594900
+2026-06-17 12:06:30.399 [76781501-7369-4973-b066-9d276c52d6a0] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:06:45.182 [cee9ec73-9784-4ee2-a47c-c032f860338e] [f4401bd2-1568-4140-bf2d-eb77d2b2b639] Transaction not found for pawapayId=f4401bd2-1568-4140-bf2d-eb77d2b2b639 type=DEPOSIT status=COMPLETED. Manual reconciliation needed.
+2026-06-17 12:11:30.370 [460e6011-1fcb-426f-b5dc-11e37797c0f5] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:11:30.370684300
+2026-06-17 12:11:30.378 [460e6011-1fcb-426f-b5dc-11e37797c0f5] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:16:30.380 [a5b3ed35-f64a-4951-bb9e-902f13c38585] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:16:30.380889800
+2026-06-17 12:16:30.380 [a5b3ed35-f64a-4951-bb9e-902f13c38585] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:21:30.376 [6f6c1b18-9eb7-4942-8308-70009f471a70] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:21:30.376090400
+2026-06-17 12:21:30.378 [6f6c1b18-9eb7-4942-8308-70009f471a70] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:26:30.378 [a440805a-aa99-4a03-ad9b-26452e70f7f7] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:26:30.378091200
+2026-06-17 12:26:30.384 [a440805a-aa99-4a03-ad9b-26452e70f7f7] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:31:30.384 [8d5b8c8a-a9bd-4898-b15b-0b076b9a026c] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:31:30.384723700
+2026-06-17 12:31:30.386 [8d5b8c8a-a9bd-4898-b15b-0b076b9a026c] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:36:30.381 [d27bf26a-f783-453c-ba6c-142a85020873] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:36:30.381054800
+2026-06-17 12:36:30.388 [d27bf26a-f783-453c-ba6c-142a85020873] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-17 12:36:30.398 [d27bf26a-f783-453c-ba6c-142a85020873] [] [RECONCILIATION_PENDING] transactionId=12c3f684-13cb-46bb-a3f9-0a6829cfe20c pawapayId=e9d0a264-0495-4231-9493-39fc6ecb30a3 type=DEPOSIT status=ACCEPTED createdAt=2026-06-17T12:36:04.853619200 ageMinutes=0
+2026-06-17 12:36:30.402 [d27bf26a-f783-453c-ba6c-142a85020873] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-17 12:37:20.241 [41770d80-8d38-44f6-ac27-8949103b4102] [e9d0a264-0495-4231-9493-39fc6ecb30a3] [WEBHOOK_EVENT] pawapayId=e9d0a264-0495-4231-9493-39fc6ecb30a3 type=DEPOSIT oldStatus=ACCEPTED newStatus=COMPLETED correlationId=41770d80-8d38-44f6-ac27-8949103b4102
+2026-06-17 12:37:20.241 [41770d80-8d38-44f6-ac27-8949103b4102] [e9d0a264-0495-4231-9493-39fc6ecb30a3] [DEPOSIT_COMPLETED] pawapayId=e9d0a264-0495-4231-9493-39fc6ecb30a3 transactionId=12c3f684-13cb-46bb-a3f9-0a6829cfe20c amount=20 ZMW correlationId=41770d80-8d38-44f6-ac27-8949103b4102
+2026-06-17 12:37:20.241 [41770d80-8d38-44f6-ac27-8949103b4102] [e9d0a264-0495-4231-9493-39fc6ecb30a3] [WEBHOOK_PROCESSED] pawapayId=e9d0a264-0495-4231-9493-39fc6ecb30a3 type=DEPOSIT status=COMPLETED correlationId=41770d80-8d38-44f6-ac27-8949103b4102 eventId=f7a2a23d-ff43-4518-a8f7-3c967f0e10a0
+2026-06-17 12:41:30.377 [d4ea571e-c177-4b1d-8d29-7bce4a808fde] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:41:30.377495800
+2026-06-17 12:41:30.380 [d4ea571e-c177-4b1d-8d29-7bce4a808fde] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:46:30.381 [aa309a86-f5f6-4ad1-bf47-4028742716f3] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:46:30.381566400
+2026-06-17 12:46:30.381 [aa309a86-f5f6-4ad1-bf47-4028742716f3] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:51:30.369 [ca3f6a8b-edff-4928-aacc-0393ae7bd57b] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:51:30.369718300
+2026-06-17 12:51:30.371 [ca3f6a8b-edff-4928-aacc-0393ae7bd57b] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 12:56:30.376 [5e4c18aa-aa9b-4c32-9b91-011abf9a869c] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T12:56:30.376312900
+2026-06-17 12:56:30.376 [5e4c18aa-aa9b-4c32-9b91-011abf9a869c] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 13:01:30.389 [3eb3c8c6-fe7f-4fbf-b4b2-a78d1c468ee9] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T13:01:30.389209
+2026-06-17 13:01:30.440 [3eb3c8c6-fe7f-4fbf-b4b2-a78d1c468ee9] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 13:06:30.383 [50af4ff0-53ac-48aa-a008-cac9ad0968e8] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T13:06:30.381069200
+2026-06-17 13:06:30.386 [50af4ff0-53ac-48aa-a008-cac9ad0968e8] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 13:11:30.376 [53314718-cdc5-443e-8540-927fb82a7adf] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T13:11:30.376362100
+2026-06-17 13:11:30.384 [53314718-cdc5-443e-8540-927fb82a7adf] [] [RECONCILIATION] No pending transactions found.
+2026-06-17 13:16:30.393 [aee1f5a6-27f1-4482-a74a-fec1dd34819a] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T13:16:30.383185200
+2026-06-17 13:16:30.403 [aee1f5a6-27f1-4482-a74a-fec1dd34819a] [] [RECONCILIATION] No pending transactions found.

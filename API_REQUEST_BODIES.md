@@ -36,10 +36,10 @@ http://localhost:8080/swagger-ui.html
 ### 1.1 Zambia — MTN MoMo
 ```json
 {
-  "merchantTransactionId": "INV-260763456789",
+  "merchantTransactionId": "DEP-001",
   "customerName": "Eniola",
   "phoneNumber": "260763456789",
-  "country": "ZMB",
+  "country": "ZM",
   "currency": "ZMW",
   "amount": 20,
   "provider": "MTN_MOMO_ZMB"
@@ -49,7 +49,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.2 Uganda — MTN MoMo
 ```json
 {
-  "merchantTransactionId": "INV-256712345678",
+  "merchantTransactionId": "DEP-002",
   "customerName": "Grace",
   "phoneNumber": "256712345678",
   "country": "UG",
@@ -62,7 +62,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.3 Kenya — MPESA
 ```json
 {
-  "merchantTransactionId": "INV-254712345678",
+  "merchantTransactionId": "DEP-003",
   "customerName": "Wanjiku",
   "phoneNumber": "254712345678",
   "country": "KE",
@@ -75,7 +75,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.4 Tanzania — Vodacom
 ```json
 {
-  "merchantTransactionId": "INV-255712345678",
+  "merchantTransactionId": "DEP-004",
   "customerName": "Juma",
   "phoneNumber": "255712345678",
   "country": "TZ",
@@ -88,7 +88,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.5 Nigeria — MTN
 ```json
 {
-  "merchantTransactionId": "INV-2345678901",
+  "merchantTransactionId": "DEP-005",
   "customerName": "Chidi",
   "phoneNumber": "2348012345678",
   "country": "NG",
@@ -101,7 +101,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.6 South Africa — Vodacom
 ```json
 {
-  "merchantTransactionId": "INV-278212345678",
+  "merchantTransactionId": "DEP-006",
   "customerName": "Thabo",
   "phoneNumber": "278212345678",
   "country": "ZA",
@@ -114,7 +114,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.7 Rwanda — MTN MoMo
 ```json
 {
-  "merchantTransactionId": "INV-250712345678",
+  "merchantTransactionId": "DEP-007",
   "customerName": "Alice",
   "phoneNumber": "250712345678",
   "country": "RW",
@@ -127,7 +127,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.8 Cameroon — MTN MoMo
 ```json
 {
-  "merchantTransactionId": "INV-237678901234",
+  "merchantTransactionId": "DEP-008",
   "customerName": "Paul",
   "phoneNumber": "237678901234",
   "country": "CM",
@@ -140,7 +140,7 @@ http://localhost:8080/swagger-ui.html
 ### 1.9 Benin — MTN MoMo
 ```json
 {
-  "merchantTransactionId": "INV-22990123456",
+  "merchantTransactionId": "DEP-009",
   "customerName": "Amadou",
   "phoneNumber": "22990123456",
   "country": "BJ",
@@ -154,7 +154,7 @@ http://localhost:8080/swagger-ui.html
 ```json
 {
   "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "INV-260763456789",
+  "merchantTransactionId": "DEP-001",
   "customerName": "Eniola",
   "pawapayId": "f4401bd2-1568-4140-bf2d-eb77d2b2b639",
   "type": "DEPOSIT",
@@ -176,7 +176,7 @@ http://localhost:8080/swagger-ui.html
 ```json
 {
   "customerName": "Eniola",
-  "merchantTransactionId": "PAYOUT-ZM-001",
+  "merchantTransactionId": "PAY-001",
   "phoneNumber": "260763456789",
   "country": "ZM",
   "amount": "50",
@@ -189,7 +189,7 @@ http://localhost:8080/swagger-ui.html
 ```json
 {
   "customerName": "Grace",
-  "merchantTransactionId": "PAYOUT-UG-001",
+  "merchantTransactionId": "PAY-002",
   "phoneNumber": "256700123456",
   "country": "UG",
   "amount": "100",
@@ -202,7 +202,7 @@ http://localhost:8080/swagger-ui.html
 ```json
 {
   "customerName": "Juma",
-  "merchantTransactionId": "PAYOUT-TZ-001",
+  "merchantTransactionId": "PAY-003",
   "phoneNumber": "255712345678",
   "country": "TZ",
   "amount": "25000",
@@ -215,7 +215,7 @@ http://localhost:8080/swagger-ui.html
 ```json
 {
   "customerName": "Chidi",
-  "merchantTransactionId": "PAYOUT-NG-001",
+  "merchantTransactionId": "PAY-004",
   "phoneNumber": "2348012345678",
   "country": "NG",
   "amount": "10000",
@@ -227,10 +227,10 @@ http://localhost:8080/swagger-ui.html
 ### Expected Success Response
 ```json
 {
-  "transactionId": "7c0e94e8-1b7d-4c5c-b1cb-77ef66c99c02",
-  "merchantTransactionId": "PAYOUT-ZM-001",
+  "transactionId": "92ad6942-c1c1-48fb-b5a3-ee388db8443f",
+  "merchantTransactionId": "PAY-001",
   "customerName": "Eniola",
-  "pawapayId": "c6601bd2-1568-4140-bf2d-eb77d2b2b222",
+  "pawapayId": "f60bf205-8d39-444c-9836-a1458eb0d92c",
   "type": "PAYOUT",
   "status": "ACCEPTED",
   "amount": 50,
@@ -544,7 +544,7 @@ The reconciliation service runs every 5 minutes via `@Scheduled` and:
 curl -X POST http://localhost:8080/api/deposits \
   -H "Content-Type: application/json" \
   -d '{
-    "merchantTransactionId": "INV-260763456789",
+    "merchantTransactionId": "DEP-001",
     "customerName": "Eniola",
     "phoneNumber": "260763456789",
     "country": "ZMB",
