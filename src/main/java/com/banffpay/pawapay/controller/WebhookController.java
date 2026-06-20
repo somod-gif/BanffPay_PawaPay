@@ -14,8 +14,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +28,7 @@ import java.util.Map;
 @RequestMapping("/api/webhooks")
 @RequiredArgsConstructor
 @Tag(name = "Webhooks", description = "PawaPay webhook callback endpoints for deposits and payouts")
+@Slf4j
 public class WebhookController {
 
     private final WebhookService webhookService;
@@ -78,6 +81,8 @@ public class WebhookController {
     public ResponseEntity<Map<String, Object>> processWebhook(
             @Valid @RequestBody WebhookRequest request,
             HttpServletRequest httpRequest) {
+            log.info("[WEBHOOK_RECEIVED] pawapayId={} type={} status={} correlationId={}",
+                    request.getPawapayId(), request.getType(), request.getStatus(), httpRequest.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER));
 
         // Resolve correlation ID from request header or generate new one
         String correlationId = resolveCorrelationId(httpRequest);

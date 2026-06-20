@@ -1,5 +1,6 @@
 package com.banffpay.pawapay.model;
 
+import com.banffpay.pawapay.dto.PawapayStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +25,8 @@ public class Transaction {
     private String customerName;        // customer name
     private String pawapayId;           // PawaPay's id (depositId or payoutId)
     private TransactionType type;       // DEPOSIT or PAYOUT
-    private TransactionStatus status;   // ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+//    private TransactionStatus status;   // ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+    PawapayStatus status;
     private BigDecimal amount;
     private String currency;
     private String phoneNumber;
@@ -36,7 +38,7 @@ public class Transaction {
      * Convenience constructor for creating new transactions.
      */
     public Transaction(String transactionId, String merchantTransactionId, String customerName,
-                       String pawapayId, TransactionType type, TransactionStatus status,
+                       String pawapayId, TransactionType type, PawapayStatus status,
                        BigDecimal amount, String currency, String phoneNumber,
                        String country, String provider) {
         this.transactionId = transactionId;

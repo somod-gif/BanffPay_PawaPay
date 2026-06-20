@@ -34,7 +34,7 @@ public enum SupportedCountry {
     // ======================== EAST AFRICA ========================
     UGANDA("Uganda", "UG", "UGA", "UGX", List.of("MTN_MOMO_UGA", "AIRTEL_UGA")),
     TANZANIA("Tanzania", "TZ", "TZA", "TZS", List.of("AIRTEL_TZA", "VODACOM_TZA", "TIGO_TZA", "HALOTEL_TZA")),
-    KENYA("Kenya", "KE", "KEN", "KES", List.of("MPESA_KE", "AIRTEL_KE", "TKASH_KE")),
+    KENYA("Kenya", "KE", "KEN", "KES", List.of("MPESA_KEN", "AIRTEL_KEN", "TKASH_KEN")),
     RWANDA("Rwanda", "RW", "RWA", "RWF", List.of("MTN_MOMO_RWA", "AIRTEL_RWA")),
 
     // ======================== CENTRAL AFRICA ========================

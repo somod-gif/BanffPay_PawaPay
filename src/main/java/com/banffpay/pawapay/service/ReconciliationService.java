@@ -1,8 +1,11 @@
 package com.banffpay.pawapay.service;
 
+import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.model.Transaction;
 import com.banffpay.pawapay.model.TransactionStatus;
+import com.banffpay.pawapay.model.TransactionType;
 import com.banffpay.pawapay.store.TransactionStore;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 public class ReconciliationService {
 
     private final TransactionStore transactionStore;
+    private final PawapayClient pawapayClient;
 
     /**
      * Scheduled job that runs every 5 minutes to reconcile pending transactions.
@@ -46,7 +50,7 @@ public class ReconciliationService {
      *   <li>Alert operations team if transaction has been pending > 1 hour</li>
      * </ol>
      */
-    @Scheduled(fixedRate = 300000, initialDelay = 60000) // Every 5 minutes, initial 1 min delay
+    @Scheduled(fixedRate = 60000) // Every 5 minutes, initial 1 min delay
     public void reconcilePendingTransactions() {
         String correlationId = UUID.randomUUID().toString();
         MDC.put("correlationId", correlationId);
@@ -86,24 +90,24 @@ public class ReconciliationService {
                             tx.getPawapayId(), tx.getAmount(), tx.getCurrency());
                 }
 
-                // In production, call PawaPay API to check live status:
-                // try {
-                //     JsonNode response = tx.getType() == TransactionType.DEPOSIT
-                //             ? pawapayClient.checkDepositStatus(tx.getPawapayId())
-                //             : pawapayClient.checkPayoutStatus(tx.getPawapayId());
-                //     if (response.has("status")) {
-                //         TransactionStatus newStatus = TransactionStatus.fromValue(response.get("status").asText());
-                //         if (newStatus != null && newStatus.isTerminal()) {
-                //             tx.setStatus(newStatus);
-                //             transactionStore.save(tx);
-                //             log.info("[RECONCILIATION_UPDATED] transactionId={} newStatus={}",
-                //                     tx.getTransactionId(), newStatus);
-                //         }
-                //     }
-                // } catch (Exception e) {
-                //     log.warn("[RECONCILIATION_ERROR] Failed to check status for {}: {}",
-                //             tx.getPawapayId(), e.getMessage());
-                // }
+//                 In production, call PawaPay API to check live status:
+                 try {
+                     JsonNode response = tx.getType() == TransactionType.DEPOSIT
+                             ? pawapayClient.checkDepositStatus(tx.getPawapayId())
+                             : pawapayClient.checkPayoutStatus(tx.getPawapayId());
+                     if (response.has("status")) {
+                         TransactionStatus newStatus = TransactionStatus.fromValue(response.get("status").asText());
+                         if (newStatus != null && newStatus.isTerminal()) {
+                             tx.setStatus(newStatus);
+                             transactionStore.save(tx);
+                             log.info("[RECONCILIATION_UPDATED] transactionId={} newStatus={}",
+                                     tx.getTransactionId(), newStatus);
+                         }
+                     }
+                 } catch (Exception e) {
+                     log.warn("[RECONCILIATION_ERROR] Failed to check status for {}: {}",
+                             tx.getPawapayId(), e.getMessage());
+                 }
             }
 
             log.info("[RECONCILIATION_COMPLETE] Processed {} pending transaction(s).", pendingTransactions.size());

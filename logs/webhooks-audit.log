@@ -66,3 +66,135 @@
 2026-06-17 13:11:30.384 [53314718-cdc5-443e-8540-927fb82a7adf] [] [RECONCILIATION] No pending transactions found.
 2026-06-17 13:16:30.393 [aee1f5a6-27f1-4482-a74a-fec1dd34819a] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-17T13:16:30.383185200
 2026-06-17 13:16:30.403 [aee1f5a6-27f1-4482-a74a-fec1dd34819a] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:15:23.581 [eaa6e2b2-cc18-4cff-a43c-0fa1f1bde6e9] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:15:23.581411
+2026-06-20 21:15:23.582 [eaa6e2b2-cc18-4cff-a43c-0fa1f1bde6e9] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:20:23.573 [3dc45751-6cc0-4c00-b464-84e2eb726692] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:20:23.573552
+2026-06-20 21:20:23.576 [3dc45751-6cc0-4c00-b464-84e2eb726692] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:25:23.575 [70200158-3b0a-49e4-9691-542a66c865ad] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:25:23.575555
+2026-06-20 21:25:23.578 [70200158-3b0a-49e4-9691-542a66c865ad] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:30:23.580 [26827f78-95a1-46b9-a9c7-a7f3f932ebac] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:30:23.579755
+2026-06-20 21:30:23.583 [26827f78-95a1-46b9-a9c7-a7f3f932ebac] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:33:24.904 [8d19d4cd-74ff-480e-a9fe-6a53058b97a6] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:33:24.904096
+2026-06-20 21:33:24.907 [8d19d4cd-74ff-480e-a9fe-6a53058b97a6] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:33:24.907 [8d19d4cd-74ff-480e-a9fe-6a53058b97a6] [] [RECONCILIATION_PENDING] transactionId=1a165c3e-07cd-4566-af2b-115d7099c80f pawapayId=c83d395d-d34c-424d-950f-a49df1595d37 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:32:40.586225 ageMinutes=0
+2026-06-20 21:33:24.907 [8d19d4cd-74ff-480e-a9fe-6a53058b97a6] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:37:18.045 [251baabd-8c60-4b37-a4be-6d2b2a169b54] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:37:18.045843
+2026-06-20 21:37:18.048 [251baabd-8c60-4b37-a4be-6d2b2a169b54] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:40:12.573 [f470256c-6dbd-46b7-9eb6-ccee3d8fc040] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:40:12.573037
+2026-06-20 21:40:12.574 [f470256c-6dbd-46b7-9eb6-ccee3d8fc040] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:40:12.575 [f470256c-6dbd-46b7-9eb6-ccee3d8fc040] [] [RECONCILIATION_PENDING] transactionId=79189187-d608-42ea-a9ff-f8156fe7bef3 pawapayId=cbfb389a-eb38-43b7-b90b-16aadd6414e2 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:39:36.708363 ageMinutes=0
+2026-06-20 21:40:12.575 [f470256c-6dbd-46b7-9eb6-ccee3d8fc040] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:43:22.150 [7a7b286d-c9bb-4842-a086-0e5314ff94e7] [f4401bd2-1568-4140-bf2d-eb77d2b2b639] Transaction not found for pawapayId=f4401bd2-1568-4140-bf2d-eb77d2b2b639 type=DEPOSIT status=COMPLETED. Manual reconciliation needed.
+2026-06-20 21:43:32.655 [b792fd42-abe9-489a-90fd-285f48de8827] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:43:32.655165
+2026-06-20 21:43:32.655 [b792fd42-abe9-489a-90fd-285f48de8827] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:44:54.548 [bcd6438a-1966-4752-8732-a92435c7148a] [f4401bd2-1568-4140-bf2d-eb77d2b2b639] Transaction not found for pawapayId=f4401bd2-1568-4140-bf2d-eb77d2b2b639 type=DEPOSIT status=COMPLETED. Manual reconciliation needed.
+2026-06-20 21:48:32.646 [169a3c63-1054-476b-ac4e-5af262de619a] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:48:32.646694
+2026-06-20 21:48:32.648 [169a3c63-1054-476b-ac4e-5af262de619a] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:48:32.648 [169a3c63-1054-476b-ac4e-5af262de619a] [] [RECONCILIATION_PENDING] transactionId=1296d991-638b-4cd1-90f4-feee6b54870c pawapayId=84bc24ea-7927-4ae4-84a4-afde77b45c52 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:46:33.771214 ageMinutes=1
+2026-06-20 21:48:32.648 [169a3c63-1054-476b-ac4e-5af262de619a] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:53:32.648 [4cc3b99d-d5e0-4e1c-b453-db50ce12022f] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:53:32.648548
+2026-06-20 21:53:32.650 [4cc3b99d-d5e0-4e1c-b453-db50ce12022f] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:53:32.651 [4cc3b99d-d5e0-4e1c-b453-db50ce12022f] [] [RECONCILIATION_PENDING] transactionId=1296d991-638b-4cd1-90f4-feee6b54870c pawapayId=84bc24ea-7927-4ae4-84a4-afde77b45c52 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:46:33.771214 ageMinutes=6
+2026-06-20 21:53:32.651 [4cc3b99d-d5e0-4e1c-b453-db50ce12022f] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:55:06.432 [f717bd80-5535-4717-86ce-9ad44da71d2e] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:55:06.432582
+2026-06-20 21:55:06.433 [f717bd80-5535-4717-86ce-9ad44da71d2e] [] [RECONCILIATION] No pending transactions found.
+2026-06-20 21:56:06.439 [630eb98a-4a4a-4434-9ea6-8a58ea7f1b9e] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:56:06.437936
+2026-06-20 21:56:06.440 [630eb98a-4a4a-4434-9ea6-8a58ea7f1b9e] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:56:06.440 [630eb98a-4a4a-4434-9ea6-8a58ea7f1b9e] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=0
+2026-06-20 21:56:06.920 [630eb98a-4a4a-4434-9ea6-8a58ea7f1b9e] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 21:56:06.920 [630eb98a-4a4a-4434-9ea6-8a58ea7f1b9e] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:57:06.436 [dab73d18-3ecb-4155-bf38-344f2ae3b751] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:57:06.436388
+2026-06-20 21:57:06.441 [dab73d18-3ecb-4155-bf38-344f2ae3b751] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:57:06.442 [dab73d18-3ecb-4155-bf38-344f2ae3b751] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=1
+2026-06-20 21:57:06.903 [dab73d18-3ecb-4155-bf38-344f2ae3b751] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 21:57:06.903 [dab73d18-3ecb-4155-bf38-344f2ae3b751] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:58:06.434 [2881a364-c27c-4802-a808-9d137083b9b8] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:58:06.434451
+2026-06-20 21:58:06.436 [2881a364-c27c-4802-a808-9d137083b9b8] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:58:06.436 [2881a364-c27c-4802-a808-9d137083b9b8] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=2
+2026-06-20 21:58:06.877 [2881a364-c27c-4802-a808-9d137083b9b8] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 21:58:06.877 [2881a364-c27c-4802-a808-9d137083b9b8] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 21:59:06.442 [a77b4e20-b2c4-49eb-99d1-a43131e9c924] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T21:59:06.442298
+2026-06-20 21:59:06.445 [a77b4e20-b2c4-49eb-99d1-a43131e9c924] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 21:59:06.445 [a77b4e20-b2c4-49eb-99d1-a43131e9c924] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=3
+2026-06-20 21:59:06.945 [a77b4e20-b2c4-49eb-99d1-a43131e9c924] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 21:59:06.945 [a77b4e20-b2c4-49eb-99d1-a43131e9c924] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:00:06.435 [e4426bdf-826c-484b-baa6-5270f368570b] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:00:06.435197
+2026-06-20 22:00:06.437 [e4426bdf-826c-484b-baa6-5270f368570b] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:00:06.437 [e4426bdf-826c-484b-baa6-5270f368570b] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=4
+2026-06-20 22:00:06.906 [e4426bdf-826c-484b-baa6-5270f368570b] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:00:06.907 [e4426bdf-826c-484b-baa6-5270f368570b] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:01:06.438 [1d46a1b2-8644-46f4-81c1-05e70761573d] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:01:06.437614
+2026-06-20 22:01:06.441 [1d46a1b2-8644-46f4-81c1-05e70761573d] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:01:06.441 [1d46a1b2-8644-46f4-81c1-05e70761573d] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=5
+2026-06-20 22:01:06.938 [1d46a1b2-8644-46f4-81c1-05e70761573d] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:01:06.938 [1d46a1b2-8644-46f4-81c1-05e70761573d] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:02:06.430 [8f5cc235-7359-45c8-a81e-072c4eaaba2a] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:02:06.430778
+2026-06-20 22:02:06.432 [8f5cc235-7359-45c8-a81e-072c4eaaba2a] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:02:06.432 [8f5cc235-7359-45c8-a81e-072c4eaaba2a] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=6
+2026-06-20 22:02:08.685 [8f5cc235-7359-45c8-a81e-072c4eaaba2a] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:02:08.685 [8f5cc235-7359-45c8-a81e-072c4eaaba2a] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:03:06.437 [f7f80238-be05-4db9-a8e9-dff900fcdd6a] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:03:06.436312
+2026-06-20 22:03:06.441 [f7f80238-be05-4db9-a8e9-dff900fcdd6a] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:03:06.442 [f7f80238-be05-4db9-a8e9-dff900fcdd6a] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=7
+2026-06-20 22:03:06.895 [f7f80238-be05-4db9-a8e9-dff900fcdd6a] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:03:06.895 [f7f80238-be05-4db9-a8e9-dff900fcdd6a] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:04:06.435 [ef39bc59-36f6-4a56-a9d6-97730d5f3fa9] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:04:06.435633
+2026-06-20 22:04:06.438 [ef39bc59-36f6-4a56-a9d6-97730d5f3fa9] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:04:06.439 [ef39bc59-36f6-4a56-a9d6-97730d5f3fa9] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=8
+2026-06-20 22:04:06.927 [ef39bc59-36f6-4a56-a9d6-97730d5f3fa9] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:04:06.927 [ef39bc59-36f6-4a56-a9d6-97730d5f3fa9] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:05:06.436 [9581206a-99bf-4db0-bea5-bb79bdb84628] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:05:06.436356
+2026-06-20 22:05:06.442 [9581206a-99bf-4db0-bea5-bb79bdb84628] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:05:06.442 [9581206a-99bf-4db0-bea5-bb79bdb84628] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=9
+2026-06-20 22:05:07.100 [9581206a-99bf-4db0-bea5-bb79bdb84628] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:05:07.100 [9581206a-99bf-4db0-bea5-bb79bdb84628] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:06:06.437 [af775f64-6471-41c5-9482-32b6d929cb81] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:06:06.436914
+2026-06-20 22:06:06.440 [af775f64-6471-41c5-9482-32b6d929cb81] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:06:06.440 [af775f64-6471-41c5-9482-32b6d929cb81] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=10
+2026-06-20 22:06:08.930 [af775f64-6471-41c5-9482-32b6d929cb81] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:06:08.930 [af775f64-6471-41c5-9482-32b6d929cb81] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:07:06.434 [fd60cde9-129b-4051-ad0c-265347d08f93] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:07:06.434465
+2026-06-20 22:07:06.438 [fd60cde9-129b-4051-ad0c-265347d08f93] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:07:06.438 [fd60cde9-129b-4051-ad0c-265347d08f93] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=11
+2026-06-20 22:07:06.907 [fd60cde9-129b-4051-ad0c-265347d08f93] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:07:06.907 [fd60cde9-129b-4051-ad0c-265347d08f93] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:08:06.436 [6dd87473-d242-4d18-8b4f-3b78fe654154] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:08:06.436368
+2026-06-20 22:08:06.440 [6dd87473-d242-4d18-8b4f-3b78fe654154] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:08:06.440 [6dd87473-d242-4d18-8b4f-3b78fe654154] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=12
+2026-06-20 22:08:06.943 [6dd87473-d242-4d18-8b4f-3b78fe654154] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:08:06.943 [6dd87473-d242-4d18-8b4f-3b78fe654154] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:09:06.431 [e295998e-51f0-46a3-9318-858e8dc36976] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:09:06.430916
+2026-06-20 22:09:06.434 [e295998e-51f0-46a3-9318-858e8dc36976] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:09:06.434 [e295998e-51f0-46a3-9318-858e8dc36976] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=13
+2026-06-20 22:09:08.764 [e295998e-51f0-46a3-9318-858e8dc36976] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:09:08.765 [e295998e-51f0-46a3-9318-858e8dc36976] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:10:06.437 [c8baba01-085d-4f54-a775-837cc609ea04] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:10:06.437697
+2026-06-20 22:10:06.441 [c8baba01-085d-4f54-a775-837cc609ea04] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:10:06.441 [c8baba01-085d-4f54-a775-837cc609ea04] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=14
+2026-06-20 22:10:06.932 [c8baba01-085d-4f54-a775-837cc609ea04] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:10:06.932 [c8baba01-085d-4f54-a775-837cc609ea04] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:11:06.441 [2a6a2493-a691-4ac0-bd40-b06ccfeecf90] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:11:06.440757
+2026-06-20 22:11:06.457 [2a6a2493-a691-4ac0-bd40-b06ccfeecf90] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:11:06.458 [2a6a2493-a691-4ac0-bd40-b06ccfeecf90] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=15
+2026-06-20 22:11:06.921 [2a6a2493-a691-4ac0-bd40-b06ccfeecf90] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:11:06.922 [2a6a2493-a691-4ac0-bd40-b06ccfeecf90] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:12:06.435 [5c664f35-f67c-4283-89c8-dcd423322ee0] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:12:06.435070
+2026-06-20 22:12:06.437 [5c664f35-f67c-4283-89c8-dcd423322ee0] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:12:06.437 [5c664f35-f67c-4283-89c8-dcd423322ee0] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=16
+2026-06-20 22:12:06.880 [5c664f35-f67c-4283-89c8-dcd423322ee0] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:12:06.880 [5c664f35-f67c-4283-89c8-dcd423322ee0] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:13:06.439 [5aa6a562-300b-487d-8580-f9bd1437c451] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:13:06.439088
+2026-06-20 22:13:06.444 [5aa6a562-300b-487d-8580-f9bd1437c451] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:13:06.444 [5aa6a562-300b-487d-8580-f9bd1437c451] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=17
+2026-06-20 22:13:07.130 [5aa6a562-300b-487d-8580-f9bd1437c451] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:13:07.130 [5aa6a562-300b-487d-8580-f9bd1437c451] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:14:06.437 [ff32e0d8-5cb4-466c-ba9f-bbeabf9bf7c4] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:14:06.437063
+2026-06-20 22:14:06.442 [ff32e0d8-5cb4-466c-ba9f-bbeabf9bf7c4] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:14:06.442 [ff32e0d8-5cb4-466c-ba9f-bbeabf9bf7c4] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=18
+2026-06-20 22:14:06.896 [ff32e0d8-5cb4-466c-ba9f-bbeabf9bf7c4] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:14:06.896 [ff32e0d8-5cb4-466c-ba9f-bbeabf9bf7c4] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
+2026-06-20 22:15:06.434 [ba1b135a-9d87-472c-9319-b39103b11763] [] [RECONCILIATION_START] Checking pending transactions at 2026-06-20T22:15:06.434832
+2026-06-20 22:15:06.436 [ba1b135a-9d87-472c-9319-b39103b11763] [] [RECONCILIATION] Found 1 pending transaction(s) to reconcile.
+2026-06-20 22:15:06.436 [ba1b135a-9d87-472c-9319-b39103b11763] [] [RECONCILIATION_PENDING] transactionId=239288e3-3cee-47e3-9a40-1d6cceef2e46 pawapayId=7083df0a-0033-4616-95b3-df69cbb9d2a9 type=DEPOSIT status=ACCEPTED createdAt=2026-06-20T21:55:25.479535 ageMinutes=19
+2026-06-20 22:15:06.888 [ba1b135a-9d87-472c-9319-b39103b11763] [] [RECONCILIATION_ERROR] Failed to check status for 7083df0a-0033-4616-95b3-df69cbb9d2a9: Invalid transaction status: 'FOUND'. Allowed values: ACCEPTED, PROCESSING, COMPLETED, FAILED, REJECTED, CANCELLED
+2026-06-20 22:15:06.888 [ba1b135a-9d87-472c-9319-b39103b11763] [] [RECONCILIATION_COMPLETE] Processed 1 pending transaction(s).
