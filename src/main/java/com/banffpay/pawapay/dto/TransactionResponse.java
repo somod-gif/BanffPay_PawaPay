@@ -36,7 +36,7 @@ public class TransactionResponse {
     private TransactionType type;
 
     @Schema(description = "Transaction status", example = "ACCEPTED", allowableValues = {"ACCEPTED", "PROCESSING", "COMPLETED", "FAILED", "REJECTED", "CANCELLED"})
-    private TransactionStatus status;
+    private PawapayStatus status;
 
     @Schema(description = "Transaction amount", example = "20")
     private BigDecimal amount;

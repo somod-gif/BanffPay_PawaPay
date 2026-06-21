@@ -2,6 +2,8 @@ package com.banffpay.pawapay.service;
 
 import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.dto.DepositRequest;
+import com.banffpay.pawapay.dto.PawapayDepositResponseDto;
+import com.banffpay.pawapay.dto.PawapayStatus;
 import com.banffpay.pawapay.dto.TransactionResponse;
 import com.banffpay.pawapay.model.SupportedCountry;
 import com.banffpay.pawapay.model.Transaction;
@@ -115,7 +117,7 @@ public class DepositService {
                 ? pawapayResponse.get("depositId").asText()
                 : depositId;
 
-        TransactionStatus status = TransactionStatus.fromValue(pawapayStatus);
+        PawapayStatus status =
 
         // Save transaction with normalized data
         Transaction transaction = Transaction.builder()
@@ -161,17 +163,25 @@ public class DepositService {
 
         // Try to get live status from PawaPay (graceful degradation on failure)
         try {
-            JsonNode response = pawapayClient.checkDepositStatus(transaction.getPawapayId());
-            if (response.has("status")) {
-                String newStatusStr = response.get("status").asText();
-                TransactionStatus newStatus = TransactionStatus.fromValue(newStatusStr);
-                if (!newStatus.equals(transaction.getStatus())) {
-                    log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
-                            transactionId, transaction.getStatus(), newStatus);
-                    transaction.setStatus(newStatus);
-                    store.save(transaction);
-                }
+            PawapayDepositResponseDto response = pawapayClient.checkDepositStatus(transaction.getPawapayId());
+//            if (response.has("status")) {
+//                String newStatusStr = response.get("status").asText();
+//                TransactionStatus newStatus = TransactionStatus.fromValue(newStatusStr);
+//                if (!newStatus.equals(transaction.getStatus())) {
+//                    log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
+//                            transactionId, transaction.getStatus(), newStatus);
+//                    transaction.setStatus(newStatus);
+//                    store.save(transaction);
+//                }
+//            }
+            TransactionStatus oldStatus = transaction.getStatus();
+            transaction.setStatus(TransactionStatus.fromValue(response.getStatus()));
+            if (!transaction.getStatus().equals(oldStatus)) {
+                log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
+                        transactionId, oldStatus, transaction.getStatus());
+                store.save(transaction);
             }
+
         } catch (Exception e) {
             log.warn("Failed to sync deposit status from PawaPay, using local data: {}", e.getMessage());
         }

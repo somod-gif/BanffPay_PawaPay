@@ -1,5 +1,7 @@
 package com.banffpay.pawapay.client;
 
+import com.banffpay.pawapay.dto.PawapayDepositResponseDto;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +83,7 @@ public class PawapayClient {
      * Check deposit status from PawaPay v2.
      * GET {baseUrl}/v2/deposits/{depositId}
      */
-    public JsonNode checkDepositStatus(String depositId) {
+    public PawapayDepositResponseDto checkDepositStatus(String depositId) {
         String url = properties.getBaseUrl() + properties.getDeposit().getEndpoint() + "/" + depositId;
         return doGet(url, depositId);
     }
@@ -95,7 +97,7 @@ public class PawapayClient {
         return doGet(url, payoutId);
     }
 
-    private JsonNode doPost(String url, Map<String, Object> body, String idempotencyKey) {
+    private <T,R> T doPost(String url, R body, String idempotencyKey) {
         try {
             HttpHeaders headers = createHeaders(idempotencyKey);
             String jsonBody = objectMapper.writeValueAsString(body);
@@ -107,14 +109,14 @@ public class PawapayClient {
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
             log.info("PawaPay response: {} {}", response.getStatusCodeValue(), response.getBody());
-            return objectMapper.readTree(response.getBody());
+            return objectMapper.readValue(response.getBody(), new TypeReference<T>() {});
         } catch (Exception e) {
             log.error("PawaPay POST failed: {}", e.getMessage(), e);
             throw new RuntimeException("PawaPay API error: " + e.getMessage(), e);
         }
     }
 
-    private JsonNode doGet(String url, String idempotencyKey) {
+    private <T> T doGet(String url, String idempotencyKey) {
         try {
             HttpHeaders headers = createHeaders(idempotencyKey);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -123,7 +125,7 @@ public class PawapayClient {
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 
             log.info("PawaPay response: {} {}", response.getStatusCodeValue(), response.getBody());
-            return objectMapper.readTree(response.getBody());
+            return objectMapper.readValue(response.getBody(), new TypeReference<T>() {});
         } catch (Exception e) {
             log.error("PawaPay GET failed: {}", e.getMessage(), e);
             throw new RuntimeException("PawaPay API error: " + e.getMessage(), e);
