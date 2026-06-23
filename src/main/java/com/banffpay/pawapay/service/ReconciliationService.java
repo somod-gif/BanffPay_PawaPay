@@ -1,11 +1,13 @@
 package com.banffpay.pawapay.service;
 
 import com.banffpay.pawapay.client.PawapayClient;
+import com.banffpay.pawapay.dto.PawapayDepositResponse;
+import com.banffpay.pawapay.dto.PawapayPayoutResponse;
 import com.banffpay.pawapay.model.Transaction;
 import com.banffpay.pawapay.model.TransactionStatus;
 import com.banffpay.pawapay.model.TransactionType;
-import com.banffpay.pawapay.store.TransactionStore;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.banffpay.pawapay.util.TransactionStore;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -16,15 +18,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Scheduled reconciliation service that periodically checks pending transactions
- * by syncing their status with PawaPay.
+ * by querying PawaPay for live status updates.
  * <p>
  * Runs every 5 minutes via {@link Scheduled}.
- * In production, this would query PawaPay's API to get live status updates.
- * For demonstration purposes, it logs the pending transactions that need attention.
+ * Keeps it simple: find pending transactions → query PawaPay → update status.
  * </p>
  */
 @Slf4j
@@ -35,85 +35,72 @@ public class ReconciliationService {
     private final TransactionStore transactionStore;
     private final PawapayClient pawapayClient;
 
-    /**
-     * Scheduled job that runs every 5 minutes to reconcile pending transactions.
-     * <p>
-     * This job identifies transactions that have been in a pending state
-     * (ACCEPTED or PROCESSING) for more than 15 minutes and logs them
-     * for manual intervention or automated status check with PawaPay.
-     * </p>
-     * In production, this method would:
-     * <ol>
-     *   <li>Query all pending transactions</li>
-     *   <li>For each, call PawaPay's GET /deposits/{id} or GET /payouts/{id}</li>
-     *   <li>Update status if PawaPay reports a terminal state</li>
-     *   <li>Alert operations team if transaction has been pending > 1 hour</li>
-     * </ol>
-     */
-    @Scheduled(fixedRate = 60000) // Every 5 minutes, initial 1 min delay
+    @Scheduled(fixedRate = 300000, initialDelay = 60000) // Every 5 minutes, initial 1 min delay
     public void reconcilePendingTransactions() {
         String correlationId = UUID.randomUUID().toString();
         MDC.put("correlationId", correlationId);
 
         try {
-            log.info("[RECONCILIATION_START] Checking pending transactions at {}",
-                    LocalDateTime.now());
-
             List<Transaction> pendingTransactions = transactionStore.findAll().stream()
                     .filter(tx -> tx.getStatus() != null && tx.getStatus().isPending())
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (pendingTransactions.isEmpty()) {
-                log.info("[RECONCILIATION] No pending transactions found.");
+                log.info("Reconciliation: No pending transactions found.");
                 return;
             }
 
-            log.info("[RECONCILIATION] Found {} pending transaction(s) to reconcile.",
-                    pendingTransactions.size());
-
-            LocalDateTime now = LocalDateTime.now();
+            log.info("Reconciliation: Found {} pending transaction(s) to reconcile.", pendingTransactions.size());
 
             for (Transaction tx : pendingTransactions) {
-                long minutesSinceCreation = ChronoUnit.MINUTES.between(tx.getCreatedAt(), now);
+                long minutesSinceCreation = ChronoUnit.MINUTES.between(tx.getCreatedAt(), LocalDateTime.now());
 
-                // Log each pending transaction with age
-                log.warn("[RECONCILIATION_PENDING] transactionId={} pawapayId={} type={} status={} " +
-                                "createdAt={} ageMinutes={}",
+                log.info("Reconciliation pending: transactionId={} pawapayId={} type={} status={} ageMinutes={}",
                         tx.getTransactionId(), tx.getPawapayId(), tx.getType(),
-                        tx.getStatus(), tx.getCreatedAt(), minutesSinceCreation);
+                        tx.getStatus(), minutesSinceCreation);
 
-                // If transaction has been pending for more than 60 minutes, escalate
+                // Query PawaPay for live status
+                try {
+                    if (tx.getType() == TransactionType.DEPOSIT) {
+                        PawapayDepositResponse response = pawapayClient.checkDepositStatus(tx.getPawapayId());
+                        if (response.getStatus() != null) {
+                            TransactionStatus newStatus = TransactionStatus.fromValue(response.getStatus());
+                            if (newStatus != null && newStatus.isTerminal()) {
+                                tx.setStatus(newStatus);
+                                transactionStore.save(tx);
+                                log.info("Reconciliation updated: transactionId={} newStatus={}",
+                                        tx.getTransactionId(), newStatus);
+                            }
+                        }
+                    } else {
+                        PawapayPayoutResponse response = pawapayClient.checkPayoutStatus(tx.getPawapayId());
+                        if (response.getStatus() != null) {
+                            TransactionStatus newStatus = TransactionStatus.fromValue(response.getStatus());
+                            if (newStatus != null && newStatus.isTerminal()) {
+                                tx.setStatus(newStatus);
+                                transactionStore.save(tx);
+                                log.info("Reconciliation updated: transactionId={} newStatus={}",
+                                        tx.getTransactionId(), newStatus);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Reconciliation error: Failed to check status for {}: {}",
+                            tx.getPawapayId(), e.getMessage());
+                }
+
+                // Escalate if pending > 60 minutes
                 if (minutesSinceCreation > 60) {
-                    log.error("[RECONCILIATION_ESCALATION] Transaction {} has been {} for {} minutes! " +
-                                    "Requires immediate manual review. pawapayId={} amount={} {}",
+                    log.error("Reconciliation escalation: transactionId={} status={} ageMinutes={} pawapayId={} amount={} {}",
                             tx.getTransactionId(), tx.getStatus(), minutesSinceCreation,
                             tx.getPawapayId(), tx.getAmount(), tx.getCurrency());
                 }
-
-//                 In production, call PawaPay API to check live status:
-                 try {
-                     JsonNode response = tx.getType() == TransactionType.DEPOSIT
-                             ? pawapayClient.checkDepositStatus(tx.getPawapayId())
-                             : pawapayClient.checkPayoutStatus(tx.getPawapayId());
-                     if (response.has("status")) {
-                         TransactionStatus newStatus = TransactionStatus.fromValue(response.get("status").asText());
-                         if (newStatus != null && newStatus.isTerminal()) {
-                             tx.setStatus(newStatus);
-                             transactionStore.save(tx);
-                             log.info("[RECONCILIATION_UPDATED] transactionId={} newStatus={}",
-                                     tx.getTransactionId(), newStatus);
-                         }
-                     }
-                 } catch (Exception e) {
-                     log.warn("[RECONCILIATION_ERROR] Failed to check status for {}: {}",
-                             tx.getPawapayId(), e.getMessage());
-                 }
             }
 
-            log.info("[RECONCILIATION_COMPLETE] Processed {} pending transaction(s).", pendingTransactions.size());
+            log.info("Reconciliation complete: Processed {} pending transaction(s).", pendingTransactions.size());
 
         } catch (Exception e) {
-            log.error("[RECONCILIATION_FAILED] Error during reconciliation: {}", e.getMessage(), e);
+            log.error("Reconciliation failed: {}", e.getMessage());
         } finally {
             MDC.remove("correlationId");
         }

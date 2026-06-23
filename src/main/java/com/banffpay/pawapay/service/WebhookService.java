@@ -1,9 +1,9 @@
 package com.banffpay.pawapay.service;
 
-import com.banffpay.pawapay.dto.WebhookRequest;
+import com.banffpay.pawapay.dto.WebhookDTO;
 import com.banffpay.pawapay.model.*;
-import com.banffpay.pawapay.store.TransactionStore;
-import com.banffpay.pawapay.store.WebhookEventStore;
+import com.banffpay.pawapay.util.TransactionStore;
+import com.banffpay.pawapay.util.WebhookEventStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +18,10 @@ import java.util.UUID;
 /**
  * Production-grade webhook service with:
  * <ul>
- *   <li>Strongly typed event handling for all 6 transaction scenarios</li>
+ *   <li>Strongly typed event handling</li>
  *   <li>Idempotency protection via correlation ID deduplication</li>
- *   <li>Structured audit logging with SLF4J MDC</li>
+ *   <li>Structured SLF4J logging — no sensitive financial data in logs</li>
  *   <li>Automatic transaction record updates</li>
- *   <li>Graceful error handling and retry tracking</li>
  * </ul>
  */
 @Slf4j
@@ -36,14 +35,9 @@ public class WebhookService {
 
     /**
      * Processes an incoming webhook from PawaPay.
-     *
-     * @param request       the validated webhook request
-     * @param correlationId the correlation ID for distributed tracing
-     * @return WebhookResult with processing details
      */
-    public WebhookResult processWebhook(WebhookRequest request, String correlationId) {
+    public WebhookResult processWebhook(WebhookDTO request, String correlationId) {
         MDC.put("correlationId", correlationId);
-        MDC.put("pawapayId", request.getPawapayId());
 
         try {
             // Step 1: Resolve enums from validated request strings
@@ -53,15 +47,14 @@ public class WebhookService {
             // Step 2: Idempotency check via correlation ID
             Optional<WebhookEvent> existingEvent = webhookEventStore.findByCorrelationId(correlationId);
             if (existingEvent.isPresent()) {
-                log.warn("Duplicate webhook detected: correlationId={} pawapayId={} type={} status={}",
+                log.warn("Duplicate webhook detected. correlationId={} pawapayId={} type={} status={}",
                         correlationId, request.getPawapayId(), type, status);
                 return WebhookResult.duplicate(correlationId,
                         "Webhook already processed with correlationId: " + correlationId);
             }
 
-            // Step 3: Create audit-trail event
+            // Step 3: Create audit-trail event (store only essential metadata, not raw payload)
             String eventId = UUID.randomUUID().toString();
-            String rawPayload = serializePayload(request);
 
             WebhookEvent event = WebhookEvent.builder()
                     .id(eventId)
@@ -69,7 +62,7 @@ public class WebhookService {
                     .pawapayId(request.getPawapayId())
                     .type(type)
                     .status(status)
-                    .rawPayload(rawPayload)
+                    .rawPayload(serializePayload(request))
                     .processingStatus(WebhookProcessingStatus.PENDING)
                     .retryCount(0)
                     .receivedAt(LocalDateTime.now())
@@ -77,13 +70,12 @@ public class WebhookService {
 
             webhookEventStore.save(event);
 
-            // Step 4: Look up the transaction
+            // Step 4: Look up the transaction by PawaPay ID
             Transaction transaction = transactionStore.findByPawapayId(request.getPawapayId())
                     .orElse(null);
 
             if (transaction == null) {
-                log.error("Transaction not found for pawapayId={} type={} status={}. Manual reconciliation needed.",
-                        request.getPawapayId(), type, status);
+                log.warn("Transaction not found for pawapayId={}. Manual reconciliation needed.", request.getPawapayId());
                 webhookEventStore.updateStatus(eventId, WebhookProcessingStatus.FAILED,
                         "Transaction not found for pawapayId: " + request.getPawapayId());
                 return WebhookResult.unmatched(correlationId,
@@ -95,18 +87,17 @@ public class WebhookService {
             String handlerResult = handleWebhookEvent(transaction, type, status, correlationId, event);
             event.setProcessedAt(LocalDateTime.now());
 
-            log.info("[WEBHOOK_PROCESSED] pawapayId={} type={} status={} correlationId={} eventId={}",
-                    request.getPawapayId(), type, status, correlationId, eventId);
+            log.info("Webhook processed. pawapayId={} type={} status={} correlationId={}",
+                    request.getPawapayId(), type, status, correlationId);
 
             return WebhookResult.success(correlationId, handlerResult);
 
         } catch (Exception e) {
-            log.error("Failed to process webhook: pawapayId={} correlationId={} error={}",
-                    request.getPawapayId(), correlationId, e.getMessage(), e);
+            log.error("Failed to process webhook. pawapayId={} correlationId={} error={}",
+                    request.getPawapayId(), correlationId, e.getMessage());
             return WebhookResult.error(correlationId, "Failed to process webhook: " + e.getMessage());
         } finally {
             MDC.remove("correlationId");
-            MDC.remove("pawapayId");
         }
     }
 
@@ -114,8 +105,9 @@ public class WebhookService {
                                        TransactionStatus status, String correlationId,
                                        WebhookEvent event) {
         TransactionStatus oldStatus = transaction.getStatus();
-        log.info("[WEBHOOK_EVENT] pawapayId={} type={} oldStatus={} newStatus={} correlationId={}",
-                transaction.getPawapayId(), type, oldStatus, status, correlationId);
+
+        log.info("Webhook event. pawapayId={} type={} oldStatus={} newStatus={}",
+                transaction.getPawapayId(), type, oldStatus, status);
 
         return switch (type) {
             case DEPOSIT -> handleDepositEvent(transaction, status, correlationId, event);
@@ -130,9 +122,9 @@ public class WebhookService {
                 transaction.setStatus(TransactionStatus.COMPLETED);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.info("[DEPOSIT_COMPLETED] pawapayId={} transactionId={} amount={} {} correlationId={}",
+                log.info("Deposit completed. pawapayId={} transactionId={} amount={} {}",
                         transaction.getPawapayId(), transaction.getTransactionId(),
-                        transaction.getAmount(), transaction.getCurrency(), correlationId);
+                        transaction.getAmount(), transaction.getCurrency());
                 yield String.format("Deposit %s completed successfully. Amount: %s %s",
                         transaction.getTransactionId(), transaction.getAmount(), transaction.getCurrency());
             }
@@ -140,8 +132,8 @@ public class WebhookService {
                 transaction.setStatus(status);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.warn("[DEPOSIT_FAILED] pawapayId={} transactionId={} status={} correlationId={}",
-                        transaction.getPawapayId(), transaction.getTransactionId(), status, correlationId);
+                log.warn("Deposit failed. pawapayId={} transactionId={} status={}",
+                        transaction.getPawapayId(), transaction.getTransactionId(), status);
                 yield String.format("Deposit %s %s. Status: %s",
                         transaction.getTransactionId(),
                         status == TransactionStatus.FAILED ? "failed" : "rejected", status);
@@ -150,8 +142,8 @@ public class WebhookService {
                 transaction.setStatus(status);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.info("[DEPOSIT_PENDING] pawapayId={} transactionId={} status={} correlationId={}",
-                        transaction.getPawapayId(), transaction.getTransactionId(), status, correlationId);
+                log.info("Deposit pending. pawapayId={} transactionId={} status={}",
+                        transaction.getPawapayId(), transaction.getTransactionId(), status);
                 yield String.format("Deposit %s is %s. Will be reconciled automatically.",
                         transaction.getTransactionId(), status);
             }
@@ -165,9 +157,9 @@ public class WebhookService {
                 transaction.setStatus(TransactionStatus.COMPLETED);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.info("[PAYOUT_COMPLETED] pawapayId={} transactionId={} amount={} {} correlationId={}",
+                log.info("Payout completed. pawapayId={} transactionId={} amount={} {}",
                         transaction.getPawapayId(), transaction.getTransactionId(),
-                        transaction.getAmount(), transaction.getCurrency(), correlationId);
+                        transaction.getAmount(), transaction.getCurrency());
                 yield String.format("Payout %s completed successfully. Amount: %s %s",
                         transaction.getTransactionId(), transaction.getAmount(), transaction.getCurrency());
             }
@@ -175,8 +167,8 @@ public class WebhookService {
                 transaction.setStatus(status);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.warn("[PAYOUT_FAILED] pawapayId={} transactionId={} status={} correlationId={}",
-                        transaction.getPawapayId(), transaction.getTransactionId(), status, correlationId);
+                log.warn("Payout failed. pawapayId={} transactionId={} status={}",
+                        transaction.getPawapayId(), transaction.getTransactionId(), status);
                 yield String.format("Payout %s %s. Status: %s",
                         transaction.getTransactionId(),
                         status == TransactionStatus.FAILED ? "failed" : "rejected", status);
@@ -185,15 +177,15 @@ public class WebhookService {
                 transaction.setStatus(status);
                 transactionStore.save(transaction);
                 event.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
-                log.info("[PAYOUT_PENDING] pawapayId={} transactionId={} status={} correlationId={}",
-                        transaction.getPawapayId(), transaction.getTransactionId(), status, correlationId);
+                log.info("Payout pending. pawapayId={} transactionId={} status={}",
+                        transaction.getPawapayId(), transaction.getTransactionId(), status);
                 yield String.format("Payout %s is %s. Will be reconciled automatically.",
                         transaction.getTransactionId(), status);
             }
         };
     }
 
-    private String serializePayload(WebhookRequest request) {
+    private String serializePayload(WebhookDTO request) {
         try {
             return objectMapper.writeValueAsString(request);
         } catch (JsonProcessingException e) {

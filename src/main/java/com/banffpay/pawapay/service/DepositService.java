@@ -1,16 +1,15 @@
 package com.banffpay.pawapay.service;
 
 import com.banffpay.pawapay.client.PawapayClient;
-import com.banffpay.pawapay.dto.DepositRequest;
-import com.banffpay.pawapay.dto.PawapayDepositResponseDto;
-import com.banffpay.pawapay.dto.PawapayStatus;
-import com.banffpay.pawapay.dto.TransactionResponse;
+import com.banffpay.pawapay.config.PawaPaySandboxConfig;
+import com.banffpay.pawapay.dto.*;
+import com.banffpay.pawapay.model.MobileNetwork;
 import com.banffpay.pawapay.model.SupportedCountry;
 import com.banffpay.pawapay.model.Transaction;
 import com.banffpay.pawapay.model.TransactionStatus;
 import com.banffpay.pawapay.model.TransactionType;
-import com.banffpay.pawapay.store.TransactionStore;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.banffpay.pawapay.util.TransactionStore;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,29 +19,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Enhanced Deposit Service with multi-country support.
- *
- * <p>Key design decisions:
- * <ul>
- *   <li><b>Centralized validation:</b> All country/currency/provider validation delegates to
- *       {@link CountryValidationService}. No duplicate validation logic.</li>
- *   <li><b>Backend-controlled currency:</b> The client may provide a currency, but the backend
- *       always uses its own currency derived from {@link SupportedCountry}. The client's currency
- *       is only validated for consistency.</li>
- *   <li><b>Multi-provider support:</b> Providers are validated against each country's allowed
- *       provider list (defined in {@link SupportedCountry}).</li>
- *   <li><b>Extensibility:</b> Adding a new country requires only updating {@link SupportedCountry}.
- *       No changes to this service.</li>
- *   <li><b>Backward compatibility:</b> All existing API contracts are preserved.</li>
- * </ul>
+ * Deposit service with comprehensive validation and automatic country routing.
+ * <p>
+ * <b>Validation flow:</b>
+ * 1. Validate country code
+ * 2. Validate currency matches country
+ * 3. Validate network is supported for country
+ * 4. Validate phone number format (country-specific)
+ * 5. Validate amount is within limits
+ * 6. Call PawaPay API
  * </p>
- *
- * <p>Supported countries (all ISO2 and ISO3 formats accepted):
- * Uganda (UG/UGA), Zambia (ZM/ZMB), Rwanda (RW/RWA), Tanzania (TZ/TZA),
- * Kenya (KE/KEN), Nigeria (NG/NGA), South Africa (ZA/ZAF), and others.</p>
- *
- * @author BanffPay Team
- * @version 2.0
  */
 @Slf4j
 @Service
@@ -51,165 +37,190 @@ public class DepositService {
 
     private final PawapayClient pawapayClient;
     private final TransactionStore store;
-    private final CountryValidationService countryValidationService;
+    private final CountryValidationService validationService;
+    private final PawaPaySandboxConfig sandboxConfig;
 
     /**
-     * Initiates a deposit transaction with multi-country support.
-     *
-     * <p>Processing flow:
-     * <ol>
-     *   <li>Parse and validate all request parameters via {@link CountryValidationService}</li>
-     *   <li>Call PawaPay API with normalized data (backend-controlled currency, validated provider)</li>
-     *   <li>Save transaction with normalized country (ISO2), provider, and backend currency</li>
-     * </ol>
-     * </p>
-     *
-     * @param request the deposit request from the client
-     * @return TransactionResponse with normalized transaction details
-     * @throws IllegalArgumentException if any validation fails
+     * Initiates a deposit transaction with comprehensive validation.
      */
-    public TransactionResponse initiateDeposit(DepositRequest request) {
-        // Extract request parameters
-        String countryCode = request.getCountry();
-        String clientCurrency = request.getCurrency();
-        String provider = request.getProvider();
-        String phoneNumber = request.getPhoneNumber();
-        String amountStr = request.getAmount();
-        String merchantTransactionId = request.getMerchantTransactionId();
-        String customerName = request.getCustomerName();
+    public DepositResponseDTO initiateDeposit(DepositRequestDTO request) {
+        String correlationId = UUID.randomUUID().toString();
 
-        // Parse amount
-        BigDecimal amount = new BigDecimal(amountStr);
+        try {
+            // Step 1: Validate country
+            log.info("[{}] Validating deposit request for country: {}", correlationId, request.getCountry());
+            SupportedCountry country = validationService.validateCountry(request.getCountry());
 
-        // Step 1-6: Centralized validation via CountryValidationService
-        CountryValidationService.ValidationResult result = countryValidationService.validateAll(
-                countryCode, clientCurrency, provider, amount, phoneNumber
-        );
+            // Step 1b: Check sandbox support
+            if (!sandboxConfig.isCountryEnabled(country.getIso2())) {
+                log.warn("[{}] Country not enabled on sandbox: {}", correlationId, country.getIso2());
+                throw new IllegalArgumentException(
+                        sandboxConfig.getUnsupportedCountryMessage(country.getIso2())
+                );
+            }
 
-        SupportedCountry supported = result.country();
-        String validatedProvider = result.validatedProvider();
-        String backendCurrency = result.backendCurrency();
+            // Step 2: Parse and validate amount
+            BigDecimal amount = new BigDecimal(request.getAmount());
+            validationService.validateAmount(amount, country.getIso2());
+            log.info("[{}] Amount validated: {} {}", correlationId, amount, country.getCurrency());
 
-        // Generate transaction IDs
-        String depositId = UUID.randomUUID().toString();
-        String transactionId = UUID.randomUUID().toString();
-        String customerMessage = "Deposit " + merchantTransactionId;
+            // Step 3: Validate phone number format
+            validationService.validatePhoneNumber(request.getPhoneNumber(), country.getIso2());
+            log.info("[{}] Phone number validated: {}", correlationId, maskPhone(request.getPhoneNumber()));
 
-        log.info("Initiating deposit for country: {} ({}) with provider: {}, amount: {} {}",
-                supported.getCountryName(), supported.getIso2(), validatedProvider, amount, backendCurrency);
+            // Step 4: Get default network for country (automatic routing)
+            MobileNetwork network = country.getDefaultNetwork();
 
-        // Call PawaPay API with normalized data
-        JsonNode pawapayResponse = pawapayClient.initiateDeposit(
-                depositId,
-                phoneNumber,
-                validatedProvider,
-                amount.toBigInteger().toString(),
-                backendCurrency,  // Backend-controlled currency (not client's)
-                merchantTransactionId,
-                customerMessage
-        );
+            // Step 4b: Check if network is blocked on sandbox
+            if (sandboxConfig.isNetworkBlocked(network.getNetworkCode())) {
+                log.warn("[{}] Network blocked on sandbox: {}", correlationId, network.getNetworkCode());
+                throw new IllegalArgumentException(
+                        sandboxConfig.getUnsupportedNetworkMessage(network.getNetworkCode(), country.getIso2())
+                );
+            }
 
-        // Parse PawaPay response
-        String pawapayStatus = pawapayResponse.has("status")
-                ? pawapayResponse.get("status").asText()
-                : "PROCESSING";
-        String pawapayId = pawapayResponse.has("depositId")
-                ? pawapayResponse.get("depositId").asText()
-                : depositId;
+            log.info("[{}] Routing to default network: {} for country {}", correlationId,
+                    network.getNetworkCode(), country.getIso2());
 
-        PawapayStatus status =
+            // Step 5: Generate transaction IDs
+            String depositId = UUID.randomUUID().toString();
+            String transactionId = UUID.randomUUID().toString();
+            String customerMessage = "Deposit " + request.getMerchantTransactionId();
 
-        // Save transaction with normalized data
-        Transaction transaction = Transaction.builder()
-                .transactionId(transactionId)
-                .merchantTransactionId(merchantTransactionId)
-                .customerName(customerName)
-                .pawapayId(pawapayId)
-                .type(TransactionType.DEPOSIT)
-                .status(status)
-                .amount(amount)
-                .currency(backendCurrency)               // Backend-controlled
-                .phoneNumber(phoneNumber)
-                .country(supported.getIso2())             // Normalized to ISO2
-                .provider(validatedProvider)
-                .createdAt(LocalDateTime.now())
-                .build();
+            log.info("[{}] Initiating deposit: country={} network={} amount={} {} phone={}",
+                    correlationId, country.getIso2(), network.getNetworkCode(),
+                    amount, country.getCurrency(), maskPhone(request.getPhoneNumber()));
 
-        store.save(transaction);
+            // Step 6: Call PawaPay API
+            PawapayDepositResponse pawapayResponse;
+            try {
+                log.info("[{}] Calling PawaPay API: country={} network={} amount={} {}",
+                        correlationId, country.getIso2(), network.getNetworkCode(), amount, country.getCurrency());
+                pawapayResponse = pawapayClient.initiateDeposit(
+                        depositId,
+                        request.getPhoneNumber(),
+                        network.getNetworkCode(),
+                        amount.toBigInteger().toString(),
+                        country.getCurrency(),
+                        request.getMerchantTransactionId(),
+                        customerMessage
+                );
+                log.info("[{}] PawaPay API responded with status: {}", correlationId, pawapayResponse.getStatus());
+            } catch (IllegalStateException e) {
+                // Re-throw business errors (provider rejection, etc.)
+                log.error("[{}] Provider error: {}", correlationId, e.getMessage());
+                throw e;
+            } catch (Exception e) {
+                // API connection failure
+                log.error("[{}] PawaPay API call failed: {}", correlationId, e.getMessage(), e);
+                throw new IllegalStateException("Failed to connect to payment provider: " + e.getMessage());
+            }
 
-        log.info("Deposit initiated successfully: transactionId={} pawapayId={} status={} country={} currency={} provider={}",
-                transactionId, pawapayId, status, supported.getIso2(), backendCurrency, validatedProvider);
+            // Step 7: Parse response
+            String status = pawapayResponse.getStatus() != null
+                    ? pawapayResponse.getStatus()
+                    : "PROCESSING";
 
-        return mapToResponse(transaction);
+            String pawapayId = pawapayResponse.getDepositId() != null
+                    ? pawapayResponse.getDepositId()
+                    : depositId;
+
+            // Step 8: Check for PawaPay rejection
+            if ("REJECTED".equalsIgnoreCase(status)) {
+                String failureReason = pawapayResponse.getFailureReason() != null
+                        ? pawapayResponse.getFailureReason().getFailureMessage()
+                        : "Unknown reason";
+                log.warn("[{}] Deposit rejected by PawaPay: country={} network={} reason={}",
+                        correlationId, country.getIso2(), network.getNetworkCode(), failureReason);
+                throw new IllegalStateException(
+                        "Deposit rejected by payment provider: " + failureReason
+                );
+            }
+
+            // Step 9: Save transaction
+            Transaction transaction = Transaction.builder()
+                    .transactionId(transactionId)
+                    .merchantTransactionId(request.getMerchantTransactionId())
+                    .customerName(request.getCustomerName())
+                    .pawapayId(pawapayId)
+                    .type(TransactionType.DEPOSIT)
+                    .status(TransactionStatus.fromValue(status))
+                    .amount(amount)
+                    .currency(country.getCurrency())
+                    .phoneNumber(request.getPhoneNumber())
+                    .country(country.getIso2())
+                    .provider(network.getNetworkCode())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            store.save(transaction);
+
+            log.info("[{}] Deposit initiated successfully: transactionId={} pawapayId={} status={} network={}",
+                    correlationId, transactionId, pawapayId, status, network.getNetworkCode());
+
+            return mapToDepositResponse(transaction, country, network);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("[{}] Validation failed: {}", correlationId, e.getMessage());
+            throw e; // Re-throw validation errors as-is (400 Bad Request)
+        } catch (IllegalStateException e) {
+            log.error("[{}] Business error: {}", correlationId, e.getMessage());
+            throw e; // Re-throw business errors (409 Conflict or 500)
+        } catch (Exception e) {
+            log.error("[{}] Unexpected error: {}", correlationId, e.getMessage(), e);
+            throw new RuntimeException("Internal server error: " + e.getMessage());
+        }
     }
 
     /**
      * Gets the current status of a deposit transaction.
-     *
-     * <p>Attempts to sync with PawaPay live status. If the PawaPay call fails,
-     * returns the last known local status (graceful degradation).</p>
-     *
-     * @param transactionId the internal transaction ID
-     * @return TransactionResponse with updated status
-     * @throws RuntimeException if the transaction is not found
      */
-    public TransactionResponse getDepositStatus(String transactionId) {
+    public DepositResponseDTO getDepositStatus(String transactionId) {
         Transaction transaction = store.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
-        if (transaction.getType() != TransactionType.DEPOSIT) {
-            log.warn("Transaction {} is not a deposit transaction (type: {})", transactionId, transaction.getType());
-        }
-
-        // Try to get live status from PawaPay (graceful degradation on failure)
+        // Try to sync with PawaPay
         try {
-            PawapayDepositResponseDto response = pawapayClient.checkDepositStatus(transaction.getPawapayId());
-//            if (response.has("status")) {
-//                String newStatusStr = response.get("status").asText();
-//                TransactionStatus newStatus = TransactionStatus.fromValue(newStatusStr);
-//                if (!newStatus.equals(transaction.getStatus())) {
-//                    log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
-//                            transactionId, transaction.getStatus(), newStatus);
-//                    transaction.setStatus(newStatus);
-//                    store.save(transaction);
-//                }
-//            }
-            TransactionStatus oldStatus = transaction.getStatus();
-            transaction.setStatus(TransactionStatus.fromValue(response.getStatus()));
-            if (!transaction.getStatus().equals(oldStatus)) {
-                log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
-                        transactionId, oldStatus, transaction.getStatus());
-                store.save(transaction);
+            PawapayDepositResponse response = pawapayClient.checkDepositStatus(transaction.getPawapayId());
+            if (response.getStatus() != null) {
+                String newStatus = response.getStatus();
+                if (!newStatus.equals(transaction.getStatus().getValue())) {
+                    log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
+                            transactionId, transaction.getStatus(), newStatus);
+                    transaction.setStatus(TransactionStatus.fromValue(newStatus));
+                    store.save(transaction);
+                }
             }
-
         } catch (Exception e) {
             log.warn("Failed to sync deposit status from PawaPay, using local data: {}", e.getMessage());
         }
 
-        return mapToResponse(transaction);
+        return mapToDepositResponse(transaction,
+                SupportedCountry.findByCountryCode(transaction.getCountry()),
+                MobileNetwork.findByNetworkCode(transaction.getProvider()));
     }
 
-    /**
-     * Maps a Transaction entity to a TransactionResponse DTO.
-     * Maintains backward compatibility with existing API response contracts.
-     *
-     * @param transaction the transaction entity
-     * @return the response DTO
-     */
-    private TransactionResponse mapToResponse(Transaction transaction) {
-        return TransactionResponse.builder()
+    private DepositResponseDTO mapToDepositResponse(Transaction transaction,
+                                                     SupportedCountry country,
+                                                     MobileNetwork network) {
+        return DepositResponseDTO.builder()
                 .transactionId(transaction.getTransactionId())
                 .merchantTransactionId(transaction.getMerchantTransactionId())
                 .customerName(transaction.getCustomerName())
                 .pawapayId(transaction.getPawapayId())
                 .type(transaction.getType())
-                .status(transaction.getStatus())
+                .status(transaction.getStatus() != null ? transaction.getStatus().getValue() : null)
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
                 .phoneNumber(transaction.getPhoneNumber())
                 .country(transaction.getCountry())
-                .provider(transaction.getProvider())
+                .network(transaction.getProvider())
                 .createdAt(transaction.getCreatedAt())
                 .build();
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 8) return phone;
+        return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
     }
 }

@@ -1,4 +1,4 @@
-package com.banffpay.pawapay.store;
+package com.banffpay.pawapay.util;
 
 import com.banffpay.pawapay.model.Transaction;
 import org.springframework.stereotype.Component;

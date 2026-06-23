@@ -1,16 +1,25 @@
 package com.banffpay.pawapay.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+/**
+ * Strongly typed DTO for payout (disbursement) requests.
+ * <p>
+ * <b>Key Design:</b> Users submit country, phone, and amount — NOT a provider/network code.
+ * The backend automatically routes to the appropriate mobile money network
+ * via {@link com.banffpay.pawapay.service.CountryRoutingService}.
+ * </p>
+ */
 @Data
 @Schema(description = "Payout request from client")
-public class PayoutRequest {
+public class PayoutRequestDTO {
 
     @NotBlank(message = "merchantTransactionId is required")
-    @Schema(description = "Client's unique transaction reference", example = "INV-673476476")
+    @Schema(description = "Client's unique transaction reference", example = "PAY-001")
     private String merchantTransactionId;
 
     @NotBlank(message = "customerName is required")
@@ -23,20 +32,12 @@ public class PayoutRequest {
     private String phoneNumber;
 
     @NotBlank(message = "country is required")
-    @Pattern(regexp = "^[A-Z]{2,3}$", message = "country must be 2-3 letter code")
-    @Schema(description = "Country code", example = "ZM", allowableValues = {"ZM", "ZMB", "UG"})
+    @Pattern(regexp = "^[A-Za-z]{2,3}$", message = "country must be ISO2 or ISO3 code (e.g., ZM, KEN)")
+    @Schema(description = "Country code (ISO2 or ISO3)", example = "ZM")
     private String country;
 
-    @NotBlank(message = "currency is required")
-    @Pattern(regexp = "^[A-Z]{3}$", message = "currency must be 3-letter ISO code")
-    @Schema(description = "Currency code", example = "ZMW", allowableValues = {"ZMW", "UGX"})
-    private String currency;
-
     @NotBlank(message = "amount is required")
-    @Schema(description = "Payout amount", example = "15")
+    @DecimalMin(value = "0.01", message = "amount must be greater than 0")
+    @Schema(description = "Payout amount", example = "50.00")
     private String amount;
-
-    @NotBlank(message = "provider is required")
-    @Schema(description = "Mobile money provider", example = "MTN_MOMO_ZMB", allowableValues = {"MTN_MOMO_ZMB", "MTN_MOMO_UGA"})
-    private String provider;
 }

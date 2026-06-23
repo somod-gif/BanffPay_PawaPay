@@ -1,16 +1,22 @@
 package com.banffpay.pawapay.client;
 
-import com.banffpay.pawapay.dto.PawapayDepositResponseDto;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.banffpay.pawapay.dto.PawapayDepositRequest;
+import com.banffpay.pawapay.dto.PawapayDepositResponse;
+import com.banffpay.pawapay.dto.PawapayPayoutRequest;
+import com.banffpay.pawapay.dto.PawapayPayoutResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
-
+/**
+ * HTTP client for communicating with the PawaPay v2 API.
+ * <p>
+ * <b>Refactored:</b> Uses strongly typed DTOs instead of {@code JsonNode} / {@code Map<String, Object>}.
+ * All request/response payloads are now type-safe and validated at compile time.
+ * </p>
+ */
 @Slf4j
 @Component
 public class PawapayClient {
@@ -29,78 +35,78 @@ public class PawapayClient {
      * Initiate a deposit with PawaPay v2 API.
      * POST {baseUrl}/v2/deposits
      */
-    public JsonNode initiateDeposit(String depositId, String phoneNumber, String provider,
-                                     String amount, String currency, String clientReferenceId,
-                                     String customerMessage) {
+    public PawapayDepositResponse initiateDeposit(String depositId, String phoneNumber, String networkCode,
+                                                   String amount, String currency, String clientReferenceId,
+                                                   String customerMessage) {
         String url = properties.getBaseUrl() + properties.getDeposit().getEndpoint();
 
-        Map<String, Object> body = Map.of(
-                "depositId", depositId,
-                "payer", Map.of(
-                        "type", "MMO",
-                        "accountDetails", Map.of(
-                                "phoneNumber", normalizePhone(phoneNumber),
-                                "provider", provider
-                        )
-                ),
-                "amount", amount,
-                "currency", currency,
-                "clientReferenceId", clientReferenceId,
-                "customerMessage", sanitizeMessage(customerMessage)
-        );
+        PawapayDepositRequest request = PawapayDepositRequest.builder()
+                .depositId(depositId)
+                .payer(PawapayDepositRequest.Payer.builder()
+                        .type("MMO")
+                        .accountDetails(PawapayDepositRequest.AccountDetails.builder()
+                                .phoneNumber(normalizePhone(phoneNumber))
+                                .provider(networkCode)
+                                .build())
+                        .build())
+                .amount(amount)
+                .currency(currency)
+                .clientReferenceId(clientReferenceId)
+                .customerMessage(sanitizeMessage(customerMessage))
+                .build();
 
-        return doPost(url, body, depositId);
+        return doPost(url, request, PawapayDepositResponse.class, depositId);
     }
 
     /**
      * Initiate a payout with PawaPay v2 API.
      * POST {baseUrl}/v2/payouts
      */
-    public JsonNode initiatePayout(String payoutId, String phoneNumber, String provider,
-                                    String amount, String currency, String clientReferenceId,
-                                    String customerMessage) {
+    public PawapayPayoutResponse initiatePayout(String payoutId, String phoneNumber, String networkCode,
+                                                 String amount, String currency, String clientReferenceId,
+                                                 String customerMessage) {
         String url = properties.getBaseUrl() + properties.getPayout().getEndpoint();
 
-        Map<String, Object> body = Map.of(
-                "payoutId", payoutId,
-                "recipient", Map.of(
-                        "type", "MMO",
-                        "accountDetails", Map.of(
-                                "phoneNumber", normalizePhone(phoneNumber),
-                                "provider", provider
-                        )
-                ),
-                "amount", amount,
-                "currency", currency,
-                "clientReferenceId", clientReferenceId,
-                "customerMessage", sanitizeMessage(customerMessage)
-        );
+        PawapayPayoutRequest request = PawapayPayoutRequest.builder()
+                .payoutId(payoutId)
+                .recipient(PawapayPayoutRequest.Recipient.builder()
+                        .type("MMO")
+                        .accountDetails(PawapayPayoutRequest.AccountDetails.builder()
+                                .phoneNumber(normalizePhone(phoneNumber))
+                                .provider(networkCode)
+                                .build())
+                        .build())
+                .amount(amount)
+                .currency(currency)
+                .clientReferenceId(clientReferenceId)
+                .customerMessage(sanitizeMessage(customerMessage))
+                .build();
 
-        return doPost(url, body, payoutId);
+        return doPost(url, request, PawapayPayoutResponse.class, payoutId);
     }
 
     /**
      * Check deposit status from PawaPay v2.
      * GET {baseUrl}/v2/deposits/{depositId}
      */
-    public PawapayDepositResponseDto checkDepositStatus(String depositId) {
+    public PawapayDepositResponse checkDepositStatus(String depositId) {
         String url = properties.getBaseUrl() + properties.getDeposit().getEndpoint() + "/" + depositId;
-        return doGet(url, depositId);
+        return doGet(url, PawapayDepositResponse.class, depositId);
     }
 
     /**
      * Check payout status from PawaPay v2.
      * GET {baseUrl}/v2/payouts/{payoutId}
      */
-    public JsonNode checkPayoutStatus(String payoutId) {
+    public PawapayPayoutResponse checkPayoutStatus(String payoutId) {
         String url = properties.getBaseUrl() + properties.getPayout().getEndpoint() + "/" + payoutId;
-        return doGet(url, payoutId);
+        return doGet(url, PawapayPayoutResponse.class, payoutId);
     }
 
-    private <T,R> T doPost(String url, R body, String idempotencyKey) {
+    private <T> T doPost(String url, Object requestBody, Class<T> responseType, String idempotencyKey) {
         try {
             HttpHeaders headers = createHeaders(idempotencyKey);
-            String jsonBody = objectMapper.writeValueAsString(body);
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
             HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
             log.info("PawaPay POST {} | idempotencyKey={}", url, idempotencyKey);
@@ -108,15 +114,17 @@ public class PawapayClient {
 
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-            log.info("PawaPay response: {} {}", response.getStatusCodeValue(), response.getBody());
-            return objectMapper.readValue(response.getBody(), new TypeReference<T>() {});
+            log.info("PawaPay response status: {} for idempotencyKey={}",
+                    response.getStatusCodeValue(), idempotencyKey);
+
+            return objectMapper.readValue(response.getBody(), responseType);
         } catch (Exception e) {
-            log.error("PawaPay POST failed: {}", e.getMessage(), e);
+            log.error("PawaPay POST failed for idempotencyKey={}: {}", idempotencyKey, e.getMessage());
             throw new RuntimeException("PawaPay API error: " + e.getMessage(), e);
         }
     }
 
-    private <T> T doGet(String url, String idempotencyKey) {
+    private <T> T doGet(String url, Class<T> responseType, String idempotencyKey) {
         try {
             HttpHeaders headers = createHeaders(idempotencyKey);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -124,10 +132,12 @@ public class PawapayClient {
             log.info("PawaPay GET {} | idempotencyKey={}", url, idempotencyKey);
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 
-            log.info("PawaPay response: {} {}", response.getStatusCodeValue(), response.getBody());
-            return objectMapper.readValue(response.getBody(), new TypeReference<T>() {});
+            log.info("PawaPay GET response status: {} for idempotencyKey={}",
+                    response.getStatusCodeValue(), idempotencyKey);
+
+            return objectMapper.readValue(response.getBody(), responseType);
         } catch (Exception e) {
-            log.error("PawaPay GET failed: {}", e.getMessage(), e);
+            log.error("PawaPay GET failed for idempotencyKey={}: {}", idempotencyKey, e.getMessage());
             throw new RuntimeException("PawaPay API error: " + e.getMessage(), e);
         }
     }
