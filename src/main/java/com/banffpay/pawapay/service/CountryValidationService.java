@@ -1,229 +1,175 @@
 package com.banffpay.pawapay.service;
 
+import com.banffpay.pawapay.model.MobileNetwork;
 import com.banffpay.pawapay.model.SupportedCountry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Centralized validation service for country-specific business rules.
+ * Comprehensive validation service with country-specific rules.
  * <p>
- * This service is the <b>single point of validation</b> for all country-related checks.
- * Both {@link DepositService} and {@link PayoutService} use this service, eliminating
- * duplicate validation logic across the codebase.
+ * Validates all inputs BEFORE calling PawaPay to avoid unnecessary API calls
+ * and provide meaningful error messages to clients.
  * </p>
- *
- * <p>Validation rules enforced:
- * <ul>
- *   <li>Country code is valid (ISO2 or ISO3) via {@link SupportedCountry#findByCountryCode(String)}</li>
- *   <li>Currency is backend-controlled — the client's currency input is validated against
- *       the resolved country, but the backend always uses its own currency value</li>
- *   <li>Provider is supported for the resolved country (multi-provider support)</li>
- *   <li>Amount is positive and within reasonable bounds</li>
- *   <li>Phone number matches expected format for the country</li>
- * </ul>
- * </p>
- *
- * <p><b>Extensibility:</b> Adding a new country requires only updating {@link SupportedCountry}.
- * No changes to this service or the payment services are needed.</p>
- *
- * @author BanffPay Team
- * @version 2.0
  */
 @Slf4j
 @Service
 public class CountryValidationService {
 
-    // Pattern for basic phone number validation (numeric, 7-15 digits)
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{7,15}$");
+    // Country-specific phone number patterns (must start with country code)
+    private static final Map<String, Pattern> PHONE_PATTERNS = Map.of(
+            "UG", Pattern.compile("^256[0-9]{9}$"),           // Uganda: 256XXXXXXXXX
+            "KE", Pattern.compile("^254[0-9]{9}$"),           // Kenya: 254XXXXXXXXX
+            "TZ", Pattern.compile("^255[0-9]{9}$"),           // Tanzania: 255XXXXXXXXX
+            "RW", Pattern.compile("^250[0-9]{9}$"),           // Rwanda: 250XXXXXXXXX
+            "CM", Pattern.compile("^237[0-9]{8,9}$"),         // Cameroon: 237XXXXXXXX
+            "NG", Pattern.compile("^234[0-9]{10,11}$"),       // Nigeria: 234XXXXXXXXXX
+            "BJ", Pattern.compile("^229[0-9]{8,9}$"),         // Benin: 229XXXXXXXX
+            "ZM", Pattern.compile("^260[0-9]{9}$"),           // Zambia: 260XXXXXXXXX
+            "ZA", Pattern.compile("^27[0-9]{9}$")             // South Africa: 27XXXXXXXXX
+    );
+
+    // Minimum and maximum amounts per country (in local currency)
+    private static final Map<String, BigDecimal> MIN_AMOUNTS = Map.of(
+            "UG", new BigDecimal("500"),    // UGX 500 min
+            "KE", new BigDecimal("10"),     // KES 10 min
+            "TZ", new BigDecimal("500"),    // TZS 500 min
+            "RW", new BigDecimal("100"),    // RWF 100 min
+            "CM", new BigDecimal("100"),    // XAF 100 min
+            "NG", new BigDecimal("100"),    // NGN 100 min
+            "BJ", new BigDecimal("100"),    // XOF 100 min
+            "ZM", new BigDecimal("5"),      // ZMW 5 min
+            "ZA", new BigDecimal("10")      // ZAR 10 min
+    );
+
+    private static final Map<String, BigDecimal> MAX_AMOUNTS = Map.of(
+            "UG", new BigDecimal("10000000"),  // UGX 10M max
+            "KE", new BigDecimal("150000"),    // KES 150K max
+            "TZ", new BigDecimal("10000000"),  // TZS 10M max
+            "RW", new BigDecimal("1000000"),   // RWF 1M max
+            "CM", new BigDecimal("1000000"),   // XAF 1M max
+            "NG", new BigDecimal("5000000"),   // NGN 5M max
+            "BJ", new BigDecimal("1000000"),   // XOF 1M max
+            "ZM", new BigDecimal("500000"),    // ZMW 500K max
+            "ZA", new BigDecimal("100000")     // ZAR 100K max
+    );
 
     /**
-     * Validates a country code string and resolves it to a {@link SupportedCountry}.
-     * <p>
-     * Accepts both ISO2 (e.g. "ZM") and ISO3 (e.g. "ZMB") codes, case-insensitive.
-     * This is the <b>only</b> place where country resolution should happen.
-     * </p>
-     *
-     * @param countryCode the country code to validate and resolve
-     * @return the resolved SupportedCountry
-     * @throws IllegalArgumentException if the country code is invalid or unsupported
+     * Validates country code and returns the SupportedCountry.
      */
-    public SupportedCountry validateAndResolveCountry(String countryCode) {
+    public SupportedCountry validateCountry(String countryCode) {
         if (countryCode == null || countryCode.isBlank()) {
             throw new IllegalArgumentException("Country code is required");
         }
         try {
-            SupportedCountry country = SupportedCountry.findByCountryCode(countryCode);
-            log.debug("Resolved country code '{}' -> {} ({})", countryCode, country.getIso2(), country.getCountryName());
-            return country;
+            return SupportedCountry.findByCountryCode(countryCode);
         } catch (IllegalArgumentException e) {
-            // Wrap with a clearer message context
-            throw new IllegalArgumentException("Invalid country: " + countryCode + ". " + e.getMessage(), e);
+            throw new IllegalArgumentException("Unsupported country: '" + countryCode + "'. " + e.getMessage());
         }
     }
 
     /**
-     * Validates that the client-provided currency matches the backend-controlled currency
-     * for the resolved country.
-     * <p>
-     * The currency is <b>always backend-controlled</b>. The client may optionally provide a currency,
-     * but if provided it must match the backend value. If not provided (null/blank), validation passes
-     * and the backend currency is used.
-     * </p>
-     *
-     * @param country        the resolved SupportedCountry
-     * @param clientCurrency the currency provided by the client (may be null if not provided)
-     * @throws IllegalArgumentException if the client currency is provided but does not match
+     * Validates currency matches the country.
      */
-    public void validateCurrencyForCountry(SupportedCountry country, String clientCurrency) {
-        // If client didn't provide a currency, backend controls it — no validation needed
-        if (clientCurrency == null || clientCurrency.isBlank()) {
-            log.debug("No currency provided by client; backend will use {} for {}", country.getCurrency(), country.getIso2());
-            return;
+    public void validateCurrency(SupportedCountry country, String currency) {
+        if (currency == null || currency.isBlank()) {
+            throw new IllegalArgumentException("Currency is required for country " + country.getIso2());
         }
-
-        String normalizedCurrency = clientCurrency.trim().toUpperCase();
-        if (!country.getCurrency().equals(normalizedCurrency)) {
+        String normalized = currency.trim().toUpperCase();
+        if (!country.getCurrency().equals(normalized)) {
             throw new IllegalArgumentException(
-                "Invalid currency '" + clientCurrency + "' for country " + country.getIso2()
-                + " (" + country.getCountryName() + "). Expected: " + country.getCurrency()
+                    "Invalid currency '" + currency + "' for country " + country.getIso2() +
+                    ". Expected: " + country.getCurrency()
             );
         }
-        log.debug("Client-provided currency '{}' validated for {}", normalizedCurrency, country.getIso2());
     }
 
     /**
-     * Returns the backend-controlled currency for the given country.
-     * <p>
-     * This is the currency that will <b>actually</b> be used in the PawaPay API call,
-     * regardless of what the client provided (which was only validated for consistency).
-     * </p>
-     *
-     * @param country the resolved SupportedCountry
-     * @return the ISO 4217 currency code
+     * Validates network is supported for the country.
      */
-    public String getCurrencyForCountry(SupportedCountry country) {
-        return country.getCurrency();
-    }
-
-    /**
-     * Validates that the given provider is supported for the resolved country.
-     * <p>
-     * Supports multiple providers per country. The provider is validated against the
-     * country's allowed provider list.
-     * </p>
-     *
-     * @param country  the resolved SupportedCountry
-     * @param provider the provider code to validate
-     * @return the validated provider code (normalized to uppercase)
-     * @throws IllegalArgumentException if the provider is null, blank, or not supported for this country
-     */
-    public String validateProviderForCountry(SupportedCountry country, String provider) {
-        if (provider == null || provider.isBlank()) {
-            throw new IllegalArgumentException("Provider is required");
+    public void validateNetwork(SupportedCountry country, String networkCode) {
+        if (networkCode == null || networkCode.isBlank()) {
+            throw new IllegalArgumentException("Network is required for country " + country.getIso2());
         }
-
-        String normalizedProvider = provider.trim().toUpperCase();
-        if (!country.isValidProvider(normalizedProvider)) {
+        String normalized = networkCode.trim().toUpperCase();
+        if (!country.isValidNetwork(normalized)) {
             throw new IllegalArgumentException(
-                "Invalid provider '" + provider + "' for country " + country.getIso2()
-                + " (" + country.getCountryName() + "). Valid providers: " + String.join(", ", country.getProviders())
+                    "Unsupported network '" + networkCode + "' for country " + country.getIso2() +
+                    ". Supported networks: " + String.join(", ", country.getNetworkCodes())
             );
         }
-        log.debug("Provider '{}' validated for {}", normalizedProvider, country.getIso2());
-        return normalizedProvider;
     }
 
     /**
-     * Validates the transaction amount.
-     * <p>
-     * Amount must be positive and non-zero.
-     * </p>
-     *
-     * @param amount  the transaction amount
-     * @param country the resolved SupportedCountry (for future country-specific limits)
-     * @throws IllegalArgumentException if the amount is invalid
+     * Validates phone number format for the specific country.
      */
-    public void validateAmount(BigDecimal amount, SupportedCountry country) {
+    public void validatePhoneNumber(String phoneNumber, String countryIso2) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+
+        String normalized = phoneNumber.trim();
+        Pattern pattern = PHONE_PATTERNS.get(countryIso2);
+
+        if (pattern == null) {
+            log.warn("No phone pattern defined for country: {}", countryIso2);
+            return; // Allow if no pattern defined
+        }
+
+        if (!pattern.matcher(normalized).matches()) {
+            String expectedFormat = getExpectedFormat(countryIso2);
+            throw new IllegalArgumentException(
+                    "Invalid phone number format for " + countryIso2 +
+                    ". Expected: " + expectedFormat + ". Received: " + normalized
+            );
+        }
+    }
+
+    /**
+     * Validates amount is within country limits.
+     */
+    public void validateAmount(BigDecimal amount, String countryIso2) {
         if (amount == null) {
             throw new IllegalArgumentException("Amount is required");
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive. Received: " + amount.toPlainString());
+            throw new IllegalArgumentException("Amount must be positive. Received: " + amount);
         }
 
-        // Future: Add country-specific min/max limits here
-        // e.g., check against SupportedCountry's minAmount/maxAmount if added
+        BigDecimal min = MIN_AMOUNTS.get(countryIso2);
+        BigDecimal max = MAX_AMOUNTS.get(countryIso2);
 
-        log.debug("Amount {} validated for {}", amount.toPlainString(), country.getIso2());
-    }
-
-    /**
-     * Validates a phone number format.
-     * <p>
-     * Phone must be numeric and 7-15 digits long (standard MSISDN format).
-     * </p>
-     *
-     * @param phoneNumber the phone number to validate
-     * @param country     the resolved SupportedCountry (for future country-specific formats)
-     * @throws IllegalArgumentException if the phone number is invalid
-     */
-    public void validatePhoneNumber(String phoneNumber, SupportedCountry country) {
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            throw new IllegalArgumentException("Phone number is required");
-        }
-        if (!PHONE_PATTERN.matcher(phoneNumber.trim()).matches()) {
+        if (min != null && amount.compareTo(min) < 0) {
             throw new IllegalArgumentException(
-                "Invalid phone number format for " + country.getIso2() + " (" + country.getCountryName()
-                + "). Phone number must be 7-15 digits. Received: " + phoneNumber
+                    "Amount below minimum for " + countryIso2 +
+                    ". Minimum: " + countryIso2 + " " + min + ". Received: " + amount
             );
         }
-        log.debug("Phone number validated for {}", country.getIso2());
+
+        if (max != null && amount.compareTo(max) > 0) {
+            throw new IllegalArgumentException(
+                    "Amount above maximum for " + countryIso2 +
+                    ". Maximum: " + countryIso2 + " " + max + ". Received: " + amount
+            );
+        }
     }
 
-    /**
-     * Validates all country-specific fields in a single call for convenience.
-     * <p>
-     * This method chains all validations and returns the resolved country and validated
-     * provider/currency for use by the calling service.
-     * </p>
-     *
-     * @param countryCode  the country code (ISO2 or ISO3)
-     * @param clientCurrency the client-provided currency (may be null for backend control)
-     * @param provider     the provider code
-     * @param amount       the transaction amount
-     * @param phoneNumber  the phone number
-     * @return a {@link ValidationResult} containing the resolved country, validated provider, and backend currency
-     * @throws IllegalArgumentException if any validation fails
-     */
-    public ValidationResult validateAll(String countryCode, String clientCurrency, String provider,
-                                        BigDecimal amount, String phoneNumber) {
-        // Step 1: Resolve country
-        SupportedCountry country = validateAndResolveCountry(countryCode);
-
-        // Step 2: Validate currency (backend-controlled)
-        validateCurrencyForCountry(country, clientCurrency);
-
-        // Step 3: Get backend currency
-        String backendCurrency = getCurrencyForCountry(country);
-
-        // Step 4: Validate provider
-        String validatedProvider = validateProviderForCountry(country, provider);
-
-        // Step 5: Validate amount
-        validateAmount(amount, country);
-
-        // Step 6: Validate phone
-        validatePhoneNumber(phoneNumber, country);
-
-        return new ValidationResult(country, validatedProvider, backendCurrency);
+    private String getExpectedFormat(String countryIso2) {
+        return switch (countryIso2) {
+            case "UG" -> "256XXXXXXXXX (e.g., 256700000000)";
+            case "KE" -> "254XXXXXXXXX (e.g., 254700000000)";
+            case "TZ" -> "255XXXXXXXXX (e.g., 255700000000)";
+            case "RW" -> "250XXXXXXXXX (e.g., 250700000000)";
+            case "CM" -> "237XXXXXXXX (e.g., 237700000000)";
+            case "NG" -> "234XXXXXXXXXX (e.g., 2348012345678)";
+            case "BJ" -> "229XXXXXXXX (e.g., 22970000000)";
+            case "ZM" -> "260XXXXXXXXX (e.g., 260700000000)";
+            case "ZA" -> "27XXXXXXXXX (e.g., 27700000000)";
+            default -> "Country code + digits";
+        };
     }
-
-    /**
-     * Result container for the {@link #validateAll(String, String, String, BigDecimal, String)} method.
-     * Holds the resolved country, validated provider, and backend currency.
-     */
-    public record ValidationResult(SupportedCountry country, String validatedProvider, String backendCurrency) {}
 }

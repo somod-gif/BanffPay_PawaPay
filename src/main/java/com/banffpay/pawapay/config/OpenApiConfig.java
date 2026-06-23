@@ -17,30 +17,46 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("BanffPay PawaPay Integration API")
-                        .version("2.0.0")
+                        .version("3.0.0")
                         .description("""
                                 Mobile money payment gateway via PawaPay API v2.
                                 Supports deposits (collection) and payouts (disbursement) across 9 African countries.
                                 
+                                ## Architecture
+                                - **Provider:** PawaPay (single payment provider)
+                                - **Networks:** MTN MoMo, Airtel Money, M-Pesa, etc. (mobile money networks)
+                                - **Countries:** 9 supported with automatic network routing
+                                
+                                ## Country Routing
+                                Users submit `{"country": "KENYA", "phoneNumber": "...", "amount": 100}`.
+                                The backend automatically routes to the default mobile money network via CountryRoutingService.
+                                
                                 ## Supported Countries (9)
-                                | Country | ISO2 | ISO3 | Currency | Providers |
-                                |---------|------|------|----------|-----------|
-                                | Uganda | UG | UGA | UGX | MTN_MOMO_UGA, AIRTEL_UGA |
-                                | Zambia | ZM | ZMB | ZMW | MTN_MOMO_ZMB, AIRTEL_ZMB |
-                                | Rwanda | RW | RWA | RWF | MTN_MOMO_RWA, AIRTEL_RWA |
-                                | Tanzania | TZ | TZA | TZS | AIRTEL_TZA, VODACOM_TZA, TIGO_TZA, HALOTEL_TZA |
-                                | Kenya | KE | KEN | KES | MPESA_KE, AIRTEL_KE, TKASH_KE |
-                                | Nigeria | NG | NGA | NGN | MTN_MOMO_NG, AIRTEL_NG, GLO_NG, 9MOBILE_NG |
-                                | South Africa | ZA | ZAF | ZAR | VODACOM_ZA, MTN_ZA, TELKOM_ZA |
-                                | Cameroon | CM | CMR | XAF | MTN_MOMO_CMR, ORANGE_CMR |
-                                | Benin | BJ | BEN | XOF | MTN_MOMO_BEN, MOOV_BEN |
+                                | Country | ISO2 | ISO3 | Currency | Default Network |
+                                |---------|------|------|----------|----------------|
+                                | Uganda | UG | UGA | UGX | MTN_MOMO_UGA |
+                                | Zambia | ZM | ZMB | ZMW | MTN_MOMO_ZMB |
+                                | Rwanda | RW | RWA | RWF | MTN_MOMO_RWA |
+                                | Tanzania | TZ | TZA | TZS | AIRTEL_TZA |
+                                | Kenya | KE | KEN | KES | MPESA_KEN |
+                                | Nigeria | NG | NGA | NGN | MTN_MOMO_NG |
+                                | South Africa | ZA | ZAF | ZAR | VODACOM_ZA |
+                                | Cameroon | CM | CMR | XAF | MTN_MOMO_CMR |
+                                | Benin | BJ | BEN | XOF | MTN_MOMO_BEN |
+                                
+                                ## API Standardization
+                                - All responses wrapped in `ApiResponse<T>` generic envelope
+                                - `201 CREATED` for successful resource creation
+                                - `202 ACCEPTED` for unmatched webhooks
+                                - `400 BAD REQUEST` for validation errors
+                                - `409 CONFLICT` for duplicate/idempotency conflicts
+                                - `500 INTERNAL SERVER ERROR` for unexpected failures
                                 
                                 ## Webhook Features
                                 - **Idempotency:** Send `X-Correlation-ID` header to prevent duplicate processing
                                 - **6 Scenarios:** Deposit/Payout × Completed/Failed/Pending
-                                - **Scheduled Reconciliation:** Every 5 minutes via @Scheduled
-                                - **Audit Trail:** All webhooks logged to WebhookEventStore (in-memory) + audit log file
-                                - **Correlation IDs:** Distributed tracing across all requests""")
+                                - **Scheduled Reconciliation:** Every 5 minutes
+                                - **Structured Logging:** SLF4J with correlation IDs, no sensitive data in logs""")
                         .contact(new Contact()
                                 .name("BanffPay")
                                 .email("support@banffpay.com")))

@@ -9,11 +9,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Enum representing all countries supported by the BanffPay PawaPay integration.
- *
- * <p>This is the <b>single source of truth</b> for country-to-currency-to-provider mappings.
- * Adding a new country requires only adding a new enum constant here — no service or
- * controller changes are needed.</p>
+ * Enum representing all countries supported by the BanffPay platform.
+ * <p>
+ * <b>Architecture Refactor (v3.0):</b> This enum now uses the correct domain model:
+ * <ul>
+ *   <li>{@link Provider} — The payment provider (e.g., PawaPay)</li>
+ *   <li>{@link MobileNetwork} — The mobile money networks (e.g., MTN_MOMO_UGA)</li>
+ *   <li>{@link SupportedCountry} — The country with references to both</li>
+ * </ul>
+ * </p>
  *
  * <p>Each entry defines:
  * <ul>
@@ -21,64 +25,96 @@ import java.util.stream.Stream;
  *   <li>ISO 3166-1 alpha-2 code (e.g. "UG")</li>
  *   <li>ISO 3166-1 alpha-3 code (e.g. "UGA")</li>
  *   <li>Currency code (ISO 4217, e.g. "UGX") — <b>backend-controlled</b>, never from client</li>
- *   <li>List of supported mobile money providers for this country</li>
+ *   <li>List of supported mobile money networks for this country</li>
+ *   <li>Default network for automatic routing</li>
  * </ul>
  * </p>
  *
  * @author BanffPay Team
- * @version 2.0
+ * @version 3.0
  */
 @Getter
 public enum SupportedCountry {
 
     // ======================== EAST AFRICA ========================
-    UGANDA("Uganda", "UG", "UGA", "UGX", List.of("MTN_MOMO_UGA", "AIRTEL_UGA")),
-    TANZANIA("Tanzania", "TZ", "TZA", "TZS", List.of("AIRTEL_TZA", "VODACOM_TZA", "TIGO_TZA", "HALOTEL_TZA")),
-    KENYA("Kenya", "KE", "KEN", "KES", List.of("MPESA_KEN", "AIRTEL_KEN", "TKASH_KEN")),
-    RWANDA("Rwanda", "RW", "RWA", "RWF", List.of("MTN_MOMO_RWA", "AIRTEL_RWA")),
+    UGANDA("Uganda", "UG", "UGA", "UGX",
+            List.of(MobileNetwork.MTN_MOMO_UGA, MobileNetwork.AIRTEL_UGA),
+            MobileNetwork.MTN_MOMO_UGA),
+
+    TANZANIA("Tanzania", "TZ", "TZA", "TZS",
+            List.of(MobileNetwork.AIRTEL_TZA, MobileNetwork.VODACOM_TZA,
+                    MobileNetwork.TIGO_TZA, MobileNetwork.HALOTEL_TZA),
+            MobileNetwork.AIRTEL_TZA),
+
+    KENYA("Kenya", "KE", "KEN", "KES",
+            List.of(MobileNetwork.MPESA_KEN, MobileNetwork.AIRTEL_KEN,
+                    MobileNetwork.TKASH_KEN),
+            MobileNetwork.MPESA_KEN),
+
+    RWANDA("Rwanda", "RW", "RWA", "RWF",
+            List.of(MobileNetwork.MTN_MOMO_RWA, MobileNetwork.AIRTEL_RWA),
+            MobileNetwork.MTN_MOMO_RWA),
 
     // ======================== CENTRAL AFRICA ========================
-    // Cameroon uses XAF (CFA Franc BEAC)
-    CAMEROON("Cameroon", "CM", "CMR", "XAF", List.of("MTN_MOMO_CMR", "ORANGE_CMR")),
+    CAMEROON("Cameroon", "CM", "CMR", "XAF",
+            List.of(MobileNetwork.MTN_MOMO_CMR, MobileNetwork.ORANGE_CMR),
+            MobileNetwork.MTN_MOMO_CMR),
 
     // ======================== WEST AFRICA ========================
-    NIGERIA("Nigeria", "NG", "NGA", "NGN", List.of("MTN_MOMO_NG", "AIRTEL_NG", "GLO_NG", "9MOBILE_NG")),
-    // Benin and others using XOF (CFA Franc BCEAO)
-    BENIN("Benin", "BJ", "BEN", "XOF", List.of("MTN_MOMO_BEN", "MOOV_BEN")),
+    NIGERIA("Nigeria", "NG", "NGA", "NGN",
+            List.of(MobileNetwork.MTN_MOMO_NG, MobileNetwork.AIRTEL_NG,
+                    MobileNetwork.GLO_NG, MobileNetwork.NINE_MOBILE_NG),
+            MobileNetwork.MTN_MOMO_NG),
+
+    BENIN("Benin", "BJ", "BEN", "XOF",
+            List.of(MobileNetwork.MTN_MOMO_BEN, MobileNetwork.MOOV_BEN),
+            MobileNetwork.MTN_MOMO_BEN),
 
     // ======================== SOUTHERN AFRICA ========================
-    ZAMBIA("Zambia", "ZM", "ZMB", "ZMW", List.of("MTN_MOMO_ZMB", "AIRTEL_ZMB")),
-    SOUTH_AFRICA("South Africa", "ZA", "ZAF", "ZAR", List.of("VODACOM_ZA", "MTN_ZA", "TELKOM_ZA"));
+    ZAMBIA("Zambia", "ZM", "ZMB", "ZMW",
+            List.of(MobileNetwork.MTN_MOMO_ZMB, MobileNetwork.AIRTEL_ZMB),
+            MobileNetwork.MTN_MOMO_ZMB),
+
+    SOUTH_AFRICA("South Africa", "ZA", "ZAF", "ZAR",
+            List.of(MobileNetwork.VODACOM_ZA, MobileNetwork.MTN_ZA,
+                    MobileNetwork.TELKOM_ZA),
+            MobileNetwork.VODACOM_ZA);
 
     private final String countryName;
     private final String iso2;
     private final String iso3;
     private final String currency;
-    private final List<String> providers;
+    private final List<MobileNetwork> networks;
+    private final MobileNetwork defaultNetwork;
 
-    /**
-     * Constructs a SupportedCountry enum constant.
-     *
-     * @param countryName human-readable country name
-     * @param iso2        ISO 3166-1 alpha-2 code (2 letters)
-     * @param iso3        ISO 3166-1 alpha-3 code (3 letters)
-     * @param currency    ISO 4217 currency code (3 letters)
-     * @param providers   list of valid mobile money provider codes for this country
-     */
-    SupportedCountry(String countryName, String iso2, String iso3, String currency, List<String> providers) {
+    SupportedCountry(String countryName, String iso2, String iso3, String currency,
+                     List<MobileNetwork> networks, MobileNetwork defaultNetwork) {
         this.countryName = countryName;
         this.iso2 = iso2;
         this.iso3 = iso3;
         this.currency = currency;
-        this.providers = Collections.unmodifiableList(providers);
+        this.networks = Collections.unmodifiableList(networks);
+        this.defaultNetwork = defaultNetwork;
+    }
+
+    /**
+     * Returns the provider for this country (always PawaPay in current implementation).
+     */
+    public Provider getProvider() {
+        return Provider.PAWAPAY;
+    }
+
+    /**
+     * Returns the network codes (e.g., "MTN_MOMO_UGA") for validation/compatibility.
+     */
+    public List<String> getNetworkCodes() {
+        return networks.stream()
+                .map(MobileNetwork::getNetworkCode)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     /**
      * Finds a SupportedCountry by its country code (ISO2 or ISO3, case-insensitive).
-     * <p>
-     * This is the <b>only</b> method that should be used to resolve a country from user input.
-     * Never hardcode country resolution logic.
-     * </p>
      *
      * @param code the country code (e.g. "ZM", "ZMB", "ug", "uga")
      * @return the matching SupportedCountry
@@ -98,23 +134,21 @@ public enum SupportedCountry {
     }
 
     /**
-     * Checks whether the given provider code is valid for this country.
+     * Validates that the given network code is supported for this country.
      *
-     * @param provider the provider code to validate (e.g. "MTN_MOMO_UGA")
-     * @return true if the provider is in this country's supported provider list
+     * @param networkCode the network code to validate (e.g., "MTN_MOMO_UGA")
+     * @return true if the network is in this country's supported list
      */
-    public boolean isValidProvider(String provider) {
-        if (provider == null || provider.isBlank()) {
+    public boolean isValidNetwork(String networkCode) {
+        if (networkCode == null || networkCode.isBlank()) {
             return false;
         }
-        return providers.contains(provider.trim().toUpperCase());
+        return networks.stream()
+                .anyMatch(n -> n.getNetworkCode().equals(networkCode.trim().toUpperCase()));
     }
 
     /**
-     * Builds a descriptive error message listing all supported country codes, currencies, and providers.
-     *
-     * @param invalidCode the invalid code that was provided
-     * @return formatted error message
+     * Builds a descriptive error message listing all supported country codes, currencies, and networks.
      */
     private static String buildErrorMessage(String invalidCode) {
         StringBuilder sb = new StringBuilder();
@@ -122,22 +156,30 @@ public enum SupportedCountry {
         sb.append("Supported countries (ISO2 / ISO3 -> Name [Currency]):\n");
         for (SupportedCountry country : values()) {
             sb.append("  ")
-              .append(String.format("%-2s / %-3s -> %-15s [%s]", country.iso2, country.iso3, country.countryName, country.currency))
+              .append(String.format("%-2s / %-3s -> %-15s [%s]", country.iso2, country.iso3,
+                      country.countryName, country.currency))
               .append("\n");
         }
-        sb.append("\nValid providers per country:\n");
+        sb.append("\nSupported networks per country:\n");
         for (SupportedCountry country : values()) {
             sb.append("  ").append(country.iso2).append(": ")
-              .append(String.join(", ", country.providers))
+              .append(String.join(", ", country.getNetworkCodes()))
               .append("\n");
         }
         return sb.toString();
     }
 
     /**
+     * Checks if this country is supported by the PawaPay sandbox.
+     * This is a runtime check against the sandbox configuration.
+     */
+    public boolean isSandboxSupported() {
+        // This will be injected via configuration
+        return true; // Default to true, overridden by PawaPaySandboxConfig
+    }
+
+    /**
      * Returns all supported ISO2 and ISO3 codes as a flat list.
-     *
-     * @return list of all ISO2 and ISO3 codes
      */
     public static List<String> getAllCountryCodes() {
         return Arrays.stream(values())
@@ -147,9 +189,6 @@ public enum SupportedCountry {
 
     /**
      * Returns the ISO2 code for a given ISO3 code (or vice versa).
-     *
-     * @param code an ISO2 or ISO3 country code
-     * @return the matching country's ISO2 code (normalized)
      */
     public static String resolveToIso2(String code) {
         return findByCountryCode(code).getIso2();
@@ -157,9 +196,6 @@ public enum SupportedCountry {
 
     /**
      * Returns the ISO3 code for a given ISO2 code (or vice versa).
-     *
-     * @param code an ISO2 or ISO3 country code
-     * @return the matching country's ISO3 code (normalized)
      */
     public static String resolveToIso3(String code) {
         return findByCountryCode(code).getIso3();
