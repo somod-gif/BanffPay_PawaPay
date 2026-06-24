@@ -36,7 +36,7 @@ import java.util.UUID;
 public class DepositService {
 
     private final PawapayClient pawapayClient;
-    private final TransactionStore store;
+    private final TransactionStore transactionStore;
     private final CountryValidationService validationService;
     private final PawaPaySandboxConfig sandboxConfig;
 
@@ -139,6 +139,7 @@ public class DepositService {
 
             // Step 9: Save transaction
             Transaction transaction = Transaction.builder()
+                    .id(UUID.randomUUID().toString())
                     .transactionId(transactionId)
                     .merchantTransactionId(request.getMerchantTransactionId())
                     .customerName(request.getCustomerName())
@@ -153,7 +154,7 @@ public class DepositService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            store.save(transaction);
+            transactionStore.save(transaction);
 
             log.info("[{}] Deposit initiated successfully: transactionId={} pawapayId={} status={} network={}",
                     correlationId, transactionId, pawapayId, status, network.getNetworkCode());
@@ -176,7 +177,7 @@ public class DepositService {
      * Gets the current status of a deposit transaction.
      */
     public DepositResponseDTO getDepositStatus(String transactionId) {
-        Transaction transaction = store.findById(transactionId)
+        Transaction transaction = transactionStore.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
         // Try to sync with PawaPay
@@ -188,7 +189,7 @@ public class DepositService {
                     log.info("Deposit status updated: transactionId={} oldStatus={} newStatus={}",
                             transactionId, transaction.getStatus(), newStatus);
                     transaction.setStatus(TransactionStatus.fromValue(newStatus));
-                    store.save(transaction);
+                    transactionStore.save(transaction);
                 }
             }
         } catch (Exception e) {

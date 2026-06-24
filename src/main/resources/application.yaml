@@ -5,35 +5,30 @@ spring:
   application:
     name: banffypay-pawapay
 
-  profiles:
-    active: dev
-
   jackson:
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false
 
-  # PostgreSQL Configuration (Neon)
-  datasource:
-    url: jdbc:postgresql://ep-royal-block-at8hhm3j-pooler.c-9.us-east-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_S1o8bGOYiXef&sslmode=require&channelBinding=require
-    driver-class-name: org.postgresql.Driver
+  # No database configuration — using in-memory stores (TransactionStore, WebhookEventStore)
+  # To switch to PostgreSQL (Neon), add spring-boot-starter-data-jpa + postgresql to pom.xml
+  # and uncomment the datasource block below:
+  #
+  # datasource:
+  #   url: jdbc:postgresql://ep-royal-block-at8hhm3j-pooler.c-9.us-east-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_S1o8bGOYiXef&sslmode=require&channelBinding=require
+  #   driver-class-name: org.postgresql.Driver
+  # jpa:
+  #   hibernate:
+  #     ddl-auto: validate
+  #   open-in-view: false
+  #   properties:
+  #     hibernate:
+  #       dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  sql:
-    init:
-      platform: postgres
-
-# PawaPay API Configuration
-pawapay:
-  base-url: https://api.sandbox.pawapay.io
-  api-key: ${PAWAPAY_API_KEY:eyJraWQiOiIxIiwiYWxnIjoiRVMyNTYifQ.eyJ0dCI6IkFBVCIsInN1YiI6IjE5MTM2IiwibWF2IjoiMSIsImV4cCI6MjA5NzYwNzA5MywiaWF0IjoxNzgxOTg3ODkzLCJwbSI6IkRBRixQQUYiLCJqdGkiOiI5ZTljMzNiMi00MThjLTQ5OTMtODU5MC1kMjk5MWZjNDgxMWUifQ.UVQO6mI5NzjX6rrGmvN5J6TNOzRtYwGjQUwY0yD6p69HjouvndmVooggWoyQWd16RJfBW1daqC5w1-ruYW6wIA}
+  # PawaPay API Configuration — API key from environment variable
+  pawapay:
+    base-url: https://api.sandbox.pawapay.io
+    api-key: ${PAWAPAY_API_KEY:}
   deposit:
     endpoint: /v2/deposits
     idempotency-header: true
@@ -48,7 +43,6 @@ logging:
   level:
     com.banffpay.pawapay: DEBUG
     org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
 
 ---
 spring:
@@ -66,11 +60,7 @@ spring:
     activate:
       on-profile: prod
 
-  datasource:
-    url: jdbc:postgresql://ep-royal-block-at8hhm3j-pooler.c-9.us-east-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_S1o8bGOYiXef&sslmode=require&channelBinding=require
-
 logging:
   level:
     com.banffpay.pawapay: INFO
     org.springframework.web: WARN
-    org.hibernate.SQL: WARN
