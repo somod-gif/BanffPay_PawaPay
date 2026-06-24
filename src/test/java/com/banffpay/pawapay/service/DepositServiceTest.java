@@ -3,6 +3,7 @@ package com.banffpay.pawapay.service;
 import com.banffpay.pawapay.client.PawapayClient;
 import com.banffpay.pawapay.config.PawaPaySandboxConfig;
 import com.banffpay.pawapay.dto.DepositRequestDTO;
+import com.banffpay.pawapay.dto.PawapayDepositResponse;
 import com.banffpay.pawapay.model.SupportedCountry;
 import com.banffpay.pawapay.util.TransactionStore;
 
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +42,7 @@ class DepositServiceTest {
 
     private DepositRequestDTO validZambiaRequest;
     private DepositRequestDTO validKenyaRequest;
+    private PawapayDepositResponse acceptedResponse;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +57,10 @@ class DepositServiceTest {
         validKenyaRequest.setPhoneNumber("254700000000");
         validKenyaRequest.setAmount("100");
         validKenyaRequest.setMerchantTransactionId("TEST-KE-001");
+
+        acceptedResponse = new PawapayDepositResponse();
+        acceptedResponse.setStatus("ACCEPTED");
+        acceptedResponse.setDepositId("test-deposit-id");
     }
 
     @Test
@@ -65,8 +72,6 @@ class DepositServiceTest {
         nigeriaRequest.setMerchantTransactionId("TEST-NG-001");
 
         when(validationService.validateCountry("NG")).thenReturn(SupportedCountry.NIGERIA);
-        doNothing().when(validationService).validateAmount(any(BigDecimal.class), anyString());
-        doNothing().when(validationService).validatePhoneNumber(anyString(), anyString());
         when(sandboxConfig.isCountryEnabled("NG")).thenReturn(false);
         when(sandboxConfig.getUnsupportedCountryMessage("NG"))
                 .thenReturn("Country NG is not supported by current PawaPay account. Supported countries: [TZ, KE, RW, CM, BJ, ZM]");
@@ -87,8 +92,6 @@ class DepositServiceTest {
         saRequest.setMerchantTransactionId("TEST-ZA-001");
 
         when(validationService.validateCountry("ZA")).thenReturn(SupportedCountry.SOUTH_AFRICA);
-        doNothing().when(validationService).validateAmount(any(BigDecimal.class), anyString());
-        doNothing().when(validationService).validatePhoneNumber(anyString(), anyString());
         when(sandboxConfig.isCountryEnabled("ZA")).thenReturn(false);
         when(sandboxConfig.getUnsupportedCountryMessage("ZA"))
                 .thenReturn("Country ZA is not supported by current PawaPay account. Supported countries: [TZ, KE, RW, CM, BJ, ZM]");
@@ -107,6 +110,8 @@ class DepositServiceTest {
         doNothing().when(validationService).validatePhoneNumber(anyString(), anyString());
         when(sandboxConfig.isCountryEnabled("ZM")).thenReturn(true);
         when(sandboxConfig.isNetworkBlocked(anyString())).thenReturn(false);
+        when(pawapayClient.initiateDeposit(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(acceptedResponse);
 
         assertDoesNotThrow(() -> depositService.initiateDeposit(validZambiaRequest));
         verify(validationService).validateCountry("ZM");
@@ -120,6 +125,8 @@ class DepositServiceTest {
         doNothing().when(validationService).validatePhoneNumber(anyString(), anyString());
         when(sandboxConfig.isCountryEnabled("KE")).thenReturn(true);
         when(sandboxConfig.isNetworkBlocked(anyString())).thenReturn(false);
+        when(pawapayClient.initiateDeposit(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(acceptedResponse);
 
         assertDoesNotThrow(() -> depositService.initiateDeposit(validKenyaRequest));
         verify(validationService).validateCountry("KE");
@@ -135,6 +142,8 @@ class DepositServiceTest {
 
         when(validationService.validateCountry("ZM")).thenReturn(SupportedCountry.ZAMBIA);
         doNothing().when(validationService).validateAmount(any(BigDecimal.class), anyString());
+        doThrow(new IllegalArgumentException("Invalid phone number format for ZM"))
+                .when(validationService).validatePhoneNumber(anyString(), anyString());
         when(sandboxConfig.isCountryEnabled("ZM")).thenReturn(true);
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -151,7 +160,8 @@ class DepositServiceTest {
         lowAmountRequest.setAmount("1");
 
         when(validationService.validateCountry("ZM")).thenReturn(SupportedCountry.ZAMBIA);
-        doNothing().when(validationService).validatePhoneNumber(anyString(), anyString());
+        doThrow(new IllegalArgumentException("Amount below minimum for ZM"))
+                .when(validationService).validateAmount(any(BigDecimal.class), anyString());
         when(sandboxConfig.isCountryEnabled("ZM")).thenReturn(true);
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,

@@ -30,7 +30,7 @@ import java.util.UUID;
 public class PayoutService {
 
     private final PawapayClient pawapayClient;
-    private final TransactionStore store;
+    private final TransactionStore transactionStore;
     private final CountryRoutingService countryRoutingService;
 
     /**
@@ -77,6 +77,7 @@ public class PayoutService {
 
         // Save transaction
         Transaction transaction = Transaction.builder()
+                .id(UUID.randomUUID().toString())
                 .transactionId(transactionId)
                 .merchantTransactionId(request.getMerchantTransactionId())
                 .customerName(request.getCustomerName())
@@ -91,7 +92,7 @@ public class PayoutService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        store.save(transaction);
+        transactionStore.save(transaction);
 
         log.info("Payout initiated: transactionId={} pawapayId={} status={} network={}",
                 transactionId, pawapayId, status, routing.network().getNetworkCode());
@@ -103,7 +104,7 @@ public class PayoutService {
      * Gets the current status of a payout transaction.
      */
     public PayoutResponseDTO getPayoutStatus(String transactionId) {
-        Transaction transaction = store.findById(transactionId)
+        Transaction transaction = transactionStore.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
         // Try to sync with PawaPay
@@ -115,7 +116,7 @@ public class PayoutService {
                     log.info("Payout status updated: transactionId={} oldStatus={} newStatus={}",
                             transactionId, transaction.getStatus(), newStatus);
                     transaction.setStatus(TransactionStatus.fromValue(newStatus));
-                    store.save(transaction);
+                    transactionStore.save(transaction);
                 }
             }
         } catch (Exception e) {
