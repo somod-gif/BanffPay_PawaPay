@@ -28,21 +28,27 @@ public class OpenApiConfig {
                                 - **Countries:** 9 supported with automatic network routing
                                 
                                 ## Country Routing
-                                Users submit `{"country": "KENYA", "phoneNumber": "...", "amount": 100}`.
+                                Users submit `{"country": "ZM", "phoneNumber": "...", "amount": 100}`.
                                 The backend automatically routes to the default mobile money network via CountryRoutingService.
                                 
                                 ## Supported Countries (9)
                                 | Country | ISO2 | ISO3 | Currency | Default Network |
                                 |---------|------|------|----------|----------------|
-                                | Uganda | UG | UGA | UGX | MTN_MOMO_UGA |
+                                | Uganda | UG | UGA | UGX | MTN_UGA |
                                 | Zambia | ZM | ZMB | ZMW | MTN_MOMO_ZMB |
-                                | Rwanda | RW | RWA | RWF | MTN_MOMO_RWA |
-                                | Tanzania | TZ | TZA | TZS | AIRTEL_TZA |
+                                | Rwanda | RW | RWA | RWF | MTN_RWA |
+                                | Tanzania | TZ | TZA | TZS | VODACOM_TZN |
                                 | Kenya | KE | KEN | KES | MPESA_KEN |
-                                | Nigeria | NG | NGA | NGN | MTN_MOMO_NG |
+                                | Nigeria | NG | NGA | NGN | MTN_NGA |
                                 | South Africa | ZA | ZAF | ZAR | VODACOM_ZA |
-                                | Cameroon | CM | CMR | XAF | MTN_MOMO_CMR |
-                                | Benin | BJ | BEN | XOF | MTN_MOMO_BEN |
+                                | Cameroon | CM | CMR | XAF | MTN_CMR |
+                                | Benin | BJ | BEN | XOF | MTN_BEN |
+                                
+                                ## ⚠️ Sandbox Country Restrictions
+                                The PawaPay sandbox account supports **only 6 countries**:
+                                **Zambia (ZM), Rwanda (RW), Tanzania (TZ), Benin (BJ), Cameroon (CM), Kenya (KE)**
+                                
+                                Countries like Uganda (UG), Nigeria (NG), South Africa (ZA) will return a **400 Bad Request** with a clear message listing the supported sandbox countries.
                                 
                                 ## API Standardization
                                 - All responses wrapped in `ApiResponse<T>` generic envelope

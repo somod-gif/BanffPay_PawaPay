@@ -25,10 +25,10 @@ spring:
   #     hibernate:
   #       dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # PawaPay API Configuration — API key from environment variable
-  pawapay:
-    base-url: https://api.sandbox.pawapay.io
-    api-key: ${PAWAPAY_API_KEY:}
+# PawaPay API Configuration — must be at root level (not nested under spring:)
+pawapay:
+  base-url: https://api.sandbox.pawapay.io
+  api-key: ${PAWAPAY_API_KEY:eyJraWQiOiIxIiwiYWxnIjoiRVMyNTYifQ.eyJ0dCI6IkFBVCIsInN1YiI6IjE5MTM2IiwibWF2IjoiMSIsImV4cCI6MjA5MjMzMDA3OCwiaWF0IjoxNzc2NzEwODc4LCJwbSI6IkRBRixQQUYiLCJqdGkiOiI1YWFlNjk2Yy1kMTdjLTRiMTktYmY2OC0yZDkwYzg1YTdkOWEifQ._8Sl2qJrr1ZF8rVFKwtcdjwwjbS4kVyZ4uprmoidZ3DRmS02SPzRYtvQd0o758i-1gSd9u1JecTLsktwTjKgJw}
   deposit:
     endpoint: /v2/deposits
     idempotency-header: true

@@ -52,10 +52,14 @@ public class DepositController {
                       },
                       "timestamp": "2026-06-22T20:00:00"
                     }"""))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Bad Request",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Bad Request — validation error or unsupported country on sandbox",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                examples = @ExampleObject(value = """
-                    {"success":false,"message":"Invalid country code: 'XX'","data":null,"timestamp":"2026-06-22T20:00:00"}"""))),
+                examples = {
+                    @ExampleObject(name = "InvalidCountry", value = """
+                        {"success":false,"message":"Invalid country code: 'XX'","data":null,"timestamp":"2026-06-22T20:00:00"}"""),
+                    @ExampleObject(name = "SandboxRestriction", value = """
+                        {"success":false,"message":"Country UG is not supported by current PawaPay account. Supported countries: [ZM, RW, TZ, BJ, CM, KE]","data":null,"timestamp":"2026-06-22T20:00:00"}""")
+                })),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Duplicate transaction"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
     })
